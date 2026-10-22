@@ -882,3 +882,179 @@ body.admin {
     padding: 28px 22px 24px;
   }
 }
+
+/* ---------------- 视图切换：文章 / 评论 ---------------- */
+
+.view-tabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  margin-bottom: 18px;
+  border-radius: 10px;
+  background: #efece4;
+}
+
+.view-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 0;
+  background: transparent;
+  padding: 7px 14px;
+  border-radius: 7px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--muted);
+  transition: background 0.14s ease, color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.view-tab em {
+  font-style: normal;
+  font-size: 11px;
+  line-height: 1.5;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #fbfaf7;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.view-tab.is-active {
+  background: #fff;
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+
+.view-tab.is-active em {
+  background: #f2e7e0;
+  color: var(--accent);
+}
+
+/* 列表行补充信息 */
+.row-cat {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 7px;
+  border-radius: 4px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+.row-stats {
+  color: #a7a29a;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 编辑器侧栏区块 */
+.side-block {
+  margin-bottom: 18px;
+}
+
+.side-block .field {
+  margin-bottom: 0;
+}
+
+.side-block .side-note {
+  margin-top: 10px;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.md-tabs__stats {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---------------- 评论管理 ---------------- */
+
+.comment-table {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.comment-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: start;
+  padding: 16px 20px;
+}
+
+.comment-row + .comment-row {
+  border-top: 1px solid var(--line-soft);
+}
+
+.comment-row__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-bottom: 5px;
+}
+
+.comment-row__head strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.comment-row__post {
+  max-width: 260px;
+  padding: 1px 8px;
+  border-radius: 4px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.comment-row__head time {
+  font-size: 11.5px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.comment-row__text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.72;
+  color: var(--ink-soft);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.comment-row__actions {
+  display: flex;
+  gap: 6px;
+  flex: none;
+}
+
+@media (max-width: 680px) {
+  .comment-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    padding: 14px 16px;
+  }
+
+  .comment-row__actions {
+    justify-content: flex-end;
+    border-top: 1px dashed var(--line-soft);
+    padding-top: 10px;
+  }
+
+  .comment-row__post {
+    max-width: 100%;
+  }
+
+  .md-tabs__hint {
+    display: none;
+  }
+}

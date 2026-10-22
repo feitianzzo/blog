@@ -40,17 +40,22 @@ npm start
 ## 功能
 
 **前台**
-- 文章列表：封面、标题、摘要、日期，按发布时间倒序
-- 文章详情：Markdown 渲染（标题 / 列表 / 引用 / 代码块 / 表格 / 图片 / 链接）
+- 文章列表：封面、标题、摘要、日期、分类、字数、评论数，按发布时间倒序
+- 分类与标签：首页顶部可按分类 / 标签筛选，地址栏同步 `?category=` / `?tag=`，可直接分享
+- 站内搜索：导航栏搜索按钮（快捷键 `/` 或 `Ctrl/Cmd + K`），覆盖标题、正文、分类、标签，结果带摘要片段，支持 ↑↓ 选择
+- 文章详情：Markdown 渲染（标题 / 列表 / 引用 / 代码块 / 表格 / 图片 / 链接），显示总字数与预计阅读时间
+- 评论：读者留昵称即可留言，提交后立即显示；15 分钟内同一 IP 最多 5 条；带蜜罐字段拦截机器人
+- 开场画面：桌面端首次进入首页展示全屏图片 + 文字，点击任意处图片上滑进入；移动端直接进首页
 - 响应式：桌面双列、移动端单列
 
 **后台**
 - 登录验证，未登录无法调用任何写接口
-- 文章列表：状态、时间、查看 / 编辑 / 删除
-- 新建与编辑：标题、正文、可选封面图（拖拽或点击上传，≤5MB，JPG/PNG/WebP/GIF）
+- 文章列表：状态、分类、字数、评论数、时间、查看 / 编辑 / 删除
+- 新建与编辑：标题、正文、分类、标签（逗号分隔，最多 8 个）、可选封面图（拖拽或点击上传，≤5MB，JPG/PNG/WebP/GIF）
 - 发布状态：立即发布 或 存为草稿（草稿不出现在前台，登录状态可预览）
-- 正文支持 Markdown 编写 / 预览切换，`Ctrl/Cmd + S` 保存
-- 删除二次确认；替换或删除文章时会清理无用的封面文件
+- 正文支持 Markdown 编写 / 预览切换，实时字数统计，`Ctrl/Cmd + S` 保存
+- 评论管理：独立分页签，可查看文章、删除留言
+- 删除二次确认；替换或删除文章时会清理无用的封面文件，删除文章时一并清理其评论
 
 ## 代码仓库
 
@@ -77,25 +82,50 @@ GitHub 只托管代码，不放线上站点（GitHub Pages 只能跑静态文件
 
 ```
 server.js            Express 服务、接口、上传
-lib/store.js         文章数据读写（JSON 文件）
+lib/store.js         文章 / 评论数据读写，字数与搜索
 lib/auth.js          账号、会话、登录限流
-public/index.html    首页
-public/post.html     文章详情
-public/admin.html    后台
-public/assets/       样式与脚本（md.js 是自带的 Markdown 渲染器）
-data/db.json         文章数据（自动创建）
+public/index.html    首页（开场、筛选、列表）
+public/post.html     文章详情（正文、字数、评论）
+public/admin.html    后台（文章、评论）
+public/assets/style.css    基础样式
+public/assets/modules.css  开场 / 搜索 / 分类标签 / 评论样式
+public/assets/intro.png    开场画面背景图
+public/assets/        其余样式与脚本（md.js 是自带的 Markdown 渲染器）
+data/db.json         文章与评论数据（自动创建）
 data/auth.json       管理员账号（自动创建）
 uploads/             上传的封面图
 ```
+
+## 接口一览
+
+| 方法 | 路径 | 说明 |
+| --- | --- | --- |
+| GET | `/api/posts` | 已发布文章（含分类、标签、字数、评论数） |
+| GET | `/api/posts/:id` | 文章详情 |
+| GET | `/api/taxonomy` | 分类与标签及各自文章数 |
+| GET | `/api/search?q=` | 站内搜索 |
+| GET | `/api/posts/:id/comments` | 文章评论 |
+| POST | `/api/posts/:id/comments` | 发表评论（`name`、`content`） |
+| POST | `/api/login` · `/api/logout` · GET `/api/session` | 登录态 |
+| GET/POST/DELETE | `/api/admin/posts…` | 后台文章管理 |
+| GET | `/api/admin/comments` | 全部评论 |
+| DELETE | `/api/admin/comments/:id` | 删除评论 |
 
 ## 数据与备份
 
 所有内容都在两个地方：
 
-- `data/db.json` —— 文章（标题、正文、状态、时间、封面路径）
+- `data/db.json` —— 文章（标题、正文、分类、标签、状态、时间、封面路径）与评论
 - `uploads/` —— 封面图片
 
 备份这两个即可完整迁移；换机器时一起拷走就能继续用。
+
+## 开场画面
+
+- 只在桌面端（≥861px）首次进入首页时出现，记在浏览器 `localStorage` 的 `banye_intro_seen` 里。
+- 想再看一次：访问 `/?intro=1`；想临时关掉：访问 `/?intro=0`。
+- 换背景图直接替换 `public/assets/intro.png`（建议 16:10 横图，中间偏暗更适合白色文字）。
+- 移动端与开启「减少动态效果」的系统设置下会自动跳过。
 
 ## 说明
 

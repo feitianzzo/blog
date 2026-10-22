@@ -5,7 +5,17 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
-import { db, save, newId, publicPost, UPLOAD_DIR, ROOT_DIR } from './lib/store.js';
+import {
+  db,
+  save,
+  newId,
+  publicPost,
+  normalizeTags,
+  searchPosts,
+  taxonomy,
+  UPLOAD_DIR,
+  ROOT_DIR,
+} from './lib/store.js';
 import {
   verifyCredentials,
   createSession,
@@ -117,6 +127,82 @@ app.get('/api/posts/:id', (req, res) => {
   res.json({ post: publicPost(post) });
 });
 
+app.get('/api/taxonomy', (_req, res) => {
+  res.json(taxonomy());
+});
+
+app.get('/api/search', (req, res) => {
+  const q = String(req.query.q || '');
+  res.json({ q: q.trim(), results: searchPosts(q) });
+});
+
+/* ---------------- 评论 ---------------- */
+
+const COMMENT_WINDOW = 10 * 60 * 1000;
+const COMMENT_LIMIT = 5;
+const commentHits = new Map(); // ip -> 时间戳数组，仅用于限流
+
+function commentAllowed(ip) {
+  const now = Date.now();
+  const list = (commentHits.get(ip) || []).filter((t) => now - t < COMMENT_WINDOW);
+  if (list.length >= COMMENT_LIMIT) {
+    commentHits.set(ip, list);
+    return false;
+  }
+  list.push(now);
+  commentHits.set(ip, list);
+  if (commentHits.size > 5000) commentHits.clear();
+  return true;
+}
+
+function publicComment(c) {
+  return { id: c.id, name: c.name, content: c.content, createdAt: c.createdAt };
+}
+
+app.get('/api/posts/:id/comments', (req, res) => {
+  const post = db().posts.find((p) => p.id === req.params.id);
+  const isOwner = Boolean(currentUser(req));
+  if (!post || (post.status !== 'published' && !isOwner)) {
+    return res.status(404).json({ error: '文章不存在或尚未发布' });
+  }
+  const list = db()
+    .comments.filter((c) => c.postId === post.id)
+    .sort((a, b) => a.createdAt - b.createdAt)
+    .map(publicComment);
+  res.json({ comments: list, total: list.length });
+});
+
+app.post('/api/posts/:id/comments', (req, res) => {
+  // 蜜罐字段：真人看不见，填了就是机器人
+  if (String(req.body?.website || '').trim()) return res.json({ ok: true });
+
+  const post = db().posts.find((p) => p.id === req.params.id);
+  if (!post || post.status !== 'published') {
+    return res.status(404).json({ error: '文章不存在或尚未发布' });
+  }
+
+  const name = cleanText(req.body?.name, 24).replace(/\s+/g, ' ');
+  const content = cleanText(req.body?.content, 1000);
+  if (!name) return res.status(400).json({ error: '请填写昵称' });
+  if (content.length < 2) return res.status(400).json({ error: '评论内容太短了，再多写几个字吧' });
+
+  const ip = req.ip || 'unknown';
+  if (!commentAllowed(ip)) {
+    return res.status(429).json({ error: '评论太频繁了，请过几分钟再来' });
+  }
+
+  const comment = {
+    id: newId(),
+    postId: post.id,
+    name,
+    content,
+    createdAt: Date.now(),
+  };
+  db().comments.push(comment);
+  save();
+  res.status(201).json({ comment: publicComment(comment) });
+});
+
 /* ---------------- 后台接口 ---------------- */
 
 app.get('/api/admin/posts', requireAuth, (_req, res) => {
@@ -167,6 +253,8 @@ app.post('/api/admin/posts', requireAuth, handleUpload, (req, res) => {
     id: newId(),
     title,
     content,
+    category: cleanText(req.body.category, 24) || null,
+    tags: normalizeTags(req.body.tags),
     cover: req.file ? `/uploads/${req.file.filename}` : null,
     status,
     createdAt: now,
@@ -203,6 +291,8 @@ app.post('/api/admin/posts/:id', requireAuth, handleUpload, (req, res) => {
 
   post.title = title;
   post.content = content;
+  post.category = cleanText(req.body.category, 24) || null;
+  post.tags = normalizeTags(req.body.tags);
   post.status = nextStatus;
   post.updatedAt = Date.now();
   if (nextStatus === 'published' && !post.publishedAt) post.publishedAt = post.updatedAt;
@@ -218,6 +308,32 @@ app.delete('/api/admin/posts/:id', requireAuth, (req, res) => {
   if (index < 0) return res.status(404).json({ error: '文章不存在' });
   const [removed] = data.posts.splice(index, 1);
   removeUpload(removed.cover);
+  // 文章删除后，评论一并清理
+  data.comments = data.comments.filter((c) => c.postId !== removed.id);
+  save();
+  res.json({ ok: true });
+});
+
+/* ---------------- 后台评论管理 ---------------- */
+
+app.get('/api/admin/comments', requireAuth, (_req, res) => {
+  const titles = new Map(db().posts.map((p) => [p.id, p.title]));
+  const list = db()
+    .comments.slice()
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .map((c) => ({
+      ...publicComment(c),
+      postId: c.postId,
+      postTitle: titles.get(c.postId) || '（文章已删除）',
+    }));
+  res.json({ comments: list, total: list.length });
+});
+
+app.delete('/api/admin/comments/:id', requireAuth, (req, res) => {
+  const data = db();
+  const index = data.comments.findIndex((c) => c.id === req.params.id);
+  if (index < 0) return res.status(404).json({ error: '评论不存在' });
+  data.comments.splice(index, 1);
   save();
   res.json({ ok: true });
 });

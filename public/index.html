@@ -8,8 +8,44 @@
     <meta name="theme-color" content="#fbfaf7" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231b1b1d'/%3E%3Cpath d='M11 9h10M11 15h10M11 21h6' stroke='%23fbfaf7' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E" />
     <link rel="stylesheet" href="/assets/style.css" />
+    <link rel="stylesheet" href="/assets/modules.css" />
   </head>
-  <body>
+  <body class="home">
+    <!-- ============ 开场画面（仅桌面端首次访问） ============ -->
+    <div class="intro" id="intro" hidden>
+      <div class="intro__bg" role="img" aria-label="暖色光晕背景"></div>
+      <div class="intro__veil"></div>
+      <div class="intro__body">
+        <p class="intro__eyebrow">Ban Ye · Notes</p>
+        <h1 class="intro__title">把想清楚的事，<br />写下来。</h1>
+        <p class="intro__sub">一个安静的写作角落，记录技术与生活里值得留下的片段。</p>
+        <span class="intro__hint">
+          点击任意处进入
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <path d="M8 13V3M4.2 6.8 8 3l3.8 3.8" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </span>
+      </div>
+    </div>
+    <script>
+      // 在首屏绘制前决定是否显示开场，避免主页内容闪一下
+      (function () {
+        var el = document.getElementById('intro');
+        var force = new URLSearchParams(location.search).get('intro');
+        var wide = window.matchMedia('(min-width: 861px)').matches;
+        var calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var seen = false;
+        try {
+          seen = localStorage.getItem('banye_intro_seen') === '1';
+        } catch (e) {}
+        var show = force === '1' || (force !== '0' && wide && !calm && !seen);
+        if (show) {
+          el.hidden = false;
+          document.body.classList.add('intro-lock');
+        }
+      })();
+    </script>
+
     <header class="site-header">
       <div class="wrap">
         <a class="brand" href="/">
@@ -17,7 +53,17 @@
         </a>
         <nav class="site-nav">
           <a href="/">文章</a>
-          <a href="/admin">写文章</a>
+          <a href="#categories">分类</a>
+          <a href="#tags">标签</a>
+          <button class="nav-search" type="button" data-search-open aria-label="搜索文章">
+            <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+              <circle cx="8.6" cy="8.6" r="5.4" />
+              <path d="m12.7 12.7 3.6 3.6" stroke-linecap="round" />
+            </svg>
+            <span>搜索</span>
+            <kbd>/</kbd>
+          </button>
+          <a class="nav-cta" href="/admin">写文章</a>
         </nav>
       </div>
     </header>
@@ -30,7 +76,27 @@
           <p>一个安静的写作角落，记录技术、阅读与生活里那些值得留下的片段。</p>
           <div class="hero__meta">
             <span>共 <strong data-post-count>—</strong></span>
+            <span>合计 <strong data-total-words>—</strong></span>
             <span>最近更新 <strong data-last-updated>—</strong></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="browse">
+        <div class="wrap">
+          <div class="browse__block" id="categories">
+            <div class="browse__head">
+              <h2>分类</h2>
+              <span>CATEGORY</span>
+            </div>
+            <div class="chips" data-category-chips></div>
+          </div>
+          <div class="browse__block" id="tags">
+            <div class="browse__head">
+              <h2>标签</h2>
+              <span>TAG</span>
+            </div>
+            <div class="chips" data-tag-chips></div>
           </div>
         </div>
       </section>
@@ -38,8 +104,12 @@
       <section class="posts">
         <div class="wrap">
           <div class="posts__head">
-            <h2>最新文章</h2>
-            <span>ALL POSTS</span>
+            <h2 data-list-title>最新文章</h2>
+            <span data-list-count>ALL POSTS</span>
+          </div>
+          <div class="filter-bar" data-filter-bar hidden>
+            <span data-filter-text></span>
+            <button type="button" data-filter-clear>清除筛选</button>
           </div>
           <div class="posts-grid" data-post-list></div>
         </div>

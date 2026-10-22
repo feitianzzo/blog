@@ -65,7 +65,7 @@
         <section id="listView">
           <div class="page-head">
             <div>
-              <h1>文章管理</h1>
+              <h1 id="pageTitle">文章管理</h1>
               <p id="listSummary">加载中…</p>
             </div>
             <button class="btn btn--primary" id="newPostBtn">
@@ -75,7 +75,23 @@
               新建文章
             </button>
           </div>
-          <div id="postListHost"></div>
+
+          <div class="view-tabs" role="tablist">
+            <button class="view-tab is-active" type="button" role="tab" data-view="posts" aria-selected="true">
+              文章 <em data-posts-badge>0</em>
+            </button>
+            <button class="view-tab" type="button" role="tab" data-view="comments" aria-selected="false">
+              评论 <em data-comments-badge>0</em>
+            </button>
+          </div>
+
+          <div id="postsPanel">
+            <div id="postListHost"></div>
+          </div>
+
+          <div id="commentsPanel" hidden>
+            <div id="commentListHost"></div>
+          </div>
         </section>
 
         <!-- 编辑器 -->
@@ -105,12 +121,28 @@
                   <button class="md-tab" role="tab" data-tab="preview" aria-selected="false">预览</button>
                 </div>
                 <span class="md-tabs__hint">支持 Markdown · ⌘/Ctrl + S 保存</span>
+                <span class="md-tabs__stats" data-word-count>0 字</span>
               </div>
               <textarea class="content-input" id="contentInput" placeholder="从这里开始写正文…&#10;&#10;## 支持小标题&#10;- 支持列表&#10;- 支持 **加粗**、*斜体*、`代码`、> 引用"></textarea>
               <div class="prose preview" id="previewPane" hidden></div>
             </div>
 
             <aside class="panel side">
+              <div class="side-block">
+                <label class="field">
+                  <span class="field__label">分类</span>
+                  <input class="input" id="categoryInput" list="categoryOptions" maxlength="24" placeholder="如：技术、阅读" />
+                </label>
+                <datalist id="categoryOptions"></datalist>
+              </div>
+              <div class="side-block">
+                <label class="field">
+                  <span class="field__label">标签</span>
+                  <input class="input" id="tagsInput" maxlength="120" placeholder="逗号分隔，如：写作, 随笔" />
+                </label>
+                <p class="side-note">最多 8 个标签，读者可以点击标签筛选同类文章。</p>
+              </div>
+
               <span class="field__label">封面图（可选）</span>
               <div class="cover-drop" id="coverDrop" tabindex="0" role="button" aria-label="上传封面图">
                 <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">

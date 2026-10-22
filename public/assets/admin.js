@@ -14,6 +14,8 @@
 
   const state = {
     posts: [],
+    comments: [],
+    view: 'posts',
     editingId: null,
     coverFile: null,
     coverURL: null,
@@ -21,6 +23,31 @@
     removeCover: false,
     dirty: false,
   };
+
+  /* ---------------- 字数统计（与后端同规则：中文按字、英文按词） ---------------- */
+
+  function countWords(text) {
+    const plain = String(text || '')
+      .replace(/```[\s\S]*?```/g, ' ')
+      .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/`([^`]*)`/g, '$1')
+      .replace(/^\s{0,3}#{1,6}\s+/gm, '')
+      .replace(/^\s{0,3}[-*+]\s+/gm, '')
+      .replace(/^\s{0,3}>\s?/gm, '')
+      .replace(/[*_~]/g, '');
+    const cjk = (plain.match(/[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff\u3040-\u30ff]/g) || []).length;
+    const latin = (plain.match(/[A-Za-z0-9]+(?:['’-][A-Za-z0-9]+)*/g) || []).length;
+    return cjk + latin;
+  }
+
+  function updateWordCount() {
+    const el = $('[data-word-count]');
+    if (!el) return;
+    const words = countWords($('#contentInput').value);
+    const minutes = Math.max(1, Math.round(words / 350));
+    el.textContent = words ? `${words.toLocaleString('zh-CN')} 字 · 约 ${minutes} 分钟` : '0 字';
+  }
 
   let toastTimer = null;
   function toast(message, isError = false) {
@@ -62,7 +89,7 @@
   async function showApp(username) {
     $('#viewLogin').hidden = true;
     $('#viewApp').hidden = false;
-    await loadPosts();
+    setView('posts');
     if (username) {
       const btn = $('#logoutBtn');
       btn.title = `当前账号：${username}`;
@@ -167,6 +194,13 @@
     const dateLabel = published
       ? `发布于 ${fmt(post.publishedAt || post.createdAt)}`
       : `创建于 ${fmt(post.createdAt)}`;
+    const cat = post.category ? `<span class="row-cat">${esc(post.category)}</span>` : '';
+    const stats = [
+      post.words ? `${Number(post.words).toLocaleString('zh-CN')} 字` : '',
+      post.commentCount ? `${post.commentCount} 条评论` : '',
+    ]
+      .filter(Boolean)
+      .join(' · ');
     return `<div class="post-row" data-id="${esc(post.id)}">
       <div class="post-row__main">
         <div class="post-row__cover">${cover}</div>
@@ -174,7 +208,9 @@
           <h3 class="post-row__title">${esc(post.title)}</h3>
           <div class="post-row__meta">
             <span class="pill ${published ? 'pill--published' : 'pill--draft'}">${published ? '已发布' : '草稿'}</span>
+            ${cat}
             <span>${dateLabel}</span>
+            ${stats ? `<span class="row-stats">· ${stats}</span>` : ''}
           </div>
         </div>
       </div>
@@ -193,9 +229,19 @@
       const { posts } = await api('/api/admin/posts');
       state.posts = posts;
       const published = posts.filter((p) => p.status === 'published').length;
+      const comments = posts.reduce((sum, p) => sum + (p.commentCount || 0), 0);
       summary.textContent = posts.length
-        ? `共 ${posts.length} 篇 · ${published} 篇已发布 · ${posts.length - published} 篇草稿`
+        ? `共 ${posts.length} 篇 · ${published} 篇已发布 · ${posts.length - published} 篇草稿 · ${comments} 条评论`
         : '还没有文章，发布第一篇吧';
+
+      const badge = $('[data-posts-badge]');
+      if (badge) badge.textContent = posts.length;
+      const cBadge = $('[data-comments-badge]');
+      if (cBadge) cBadge.textContent = comments;
+
+      $('#categoryOptions').innerHTML = [...new Set(posts.map((p) => p.category).filter(Boolean))]
+        .map((c) => `<option value="${esc(c)}"></option>`)
+        .join('');
 
       if (!posts.length) {
         host.innerHTML = `<div class="empty-state">
@@ -212,6 +258,93 @@
       host.innerHTML = `<div class="empty-state"><h2>加载失败</h2><p>${esc(err.message)}</p></div>`;
     }
   }
+
+  /* ---------------- 视图切换：文章 / 评论 ---------------- */
+
+  function setView(view) {
+    state.view = view;
+    const isPosts = view === 'posts';
+    $('#postsPanel').hidden = !isPosts;
+    $('#commentsPanel').hidden = isPosts;
+    $('#newPostBtn').hidden = !isPosts;
+    $('#pageTitle').textContent = isPosts ? '文章管理' : '评论管理';
+    $$('.view-tab').forEach((btn) => {
+      const on = btn.dataset.view === view;
+      btn.classList.toggle('is-active', on);
+      btn.setAttribute('aria-selected', String(on));
+    });
+    if (isPosts) loadPosts();
+    else loadComments();
+  }
+
+  function commentRowHTML(c) {
+    return `<div class="comment-row" data-id="${esc(c.id)}">
+      <div class="comment-row__body">
+        <div class="comment-row__head">
+          <strong>${esc(c.name)}</strong>
+          <span class="comment-row__post">${esc(c.postTitle)}</span>
+          <time>${fmt(c.createdAt, true)}</time>
+        </div>
+        <p class="comment-row__text">${esc(c.content)}</p>
+      </div>
+      <div class="comment-row__actions">
+        <a class="btn btn--sm" href="/p/${encodeURIComponent(c.postId)}#comments" target="_blank" rel="noopener">查看文章</a>
+        <button class="btn btn--sm btn--danger" type="button" data-action="delete-comment">删除</button>
+      </div>
+    </div>`;
+  }
+
+  async function loadComments() {
+    const host = $('#commentListHost');
+    const summary = $('#listSummary');
+    try {
+      const { comments } = await api('/api/admin/comments');
+      state.comments = comments;
+      const badge = $('[data-comments-badge]');
+      if (badge) badge.textContent = comments.length;
+      summary.textContent = comments.length ? `共 ${comments.length} 条评论 · 最新在前` : '还没有读者留言';
+
+      if (!comments.length) {
+        host.innerHTML = `<div class="empty-state">
+          <h2>还没有评论</h2>
+          <p>读者在文章页留言后会出现在这里，可以随时删除。</p>
+        </div>`;
+        return;
+      }
+      host.innerHTML = `<div class="comment-table">${comments.map(commentRowHTML).join('')}</div>`;
+    } catch (err) {
+      if (err.status === 401) return showLogin();
+      summary.textContent = '加载失败';
+      host.innerHTML = `<div class="empty-state"><h2>加载失败</h2><p>${esc(err.message)}</p></div>`;
+    }
+  }
+
+  $$('.view-tab').forEach((btn) =>
+    btn.addEventListener('click', () => {
+      if (btn.dataset.view !== state.view) setView(btn.dataset.view);
+    })
+  );
+
+  $('#commentListHost').addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-action="delete-comment"]');
+    if (!btn) return;
+    const row = btn.closest('.comment-row');
+    const comment = state.comments.find((c) => c.id === row.dataset.id);
+    const ok = await askConfirm({
+      title: '删除这条评论？',
+      text: `来自「${comment ? comment.name : '读者'}」的留言将被永久删除，前台会立即消失。`,
+      okText: '确认删除',
+    });
+    if (!ok) return;
+    try {
+      await api(`/api/admin/comments/${encodeURIComponent(row.dataset.id)}`, { method: 'DELETE' });
+      await loadComments();
+      toast('评论已删除');
+    } catch (err) {
+      if (err.status === 401) return showLogin();
+      toast(err.message, true);
+    }
+  });
 
   $('#postListHost').addEventListener('click', (e) => {
     const actionBtn = e.target.closest('[data-action]');
@@ -284,16 +417,21 @@
 
     $('#titleInput').value = '';
     $('#contentInput').value = '';
+    $('#categoryInput').value = '';
+    $('#tagsInput').value = '';
     $('#previewPane').innerHTML = '';
     $('#postTimestamps').textContent = '';
     $('#statusSelect').value = 'published';
     setTab('write');
+    updateWordCount();
 
     if (id) {
       try {
         const { post } = await api(`/api/admin/posts/${encodeURIComponent(id)}`);
         $('#titleInput').value = post.title;
         $('#contentInput').value = post.content;
+        $('#categoryInput').value = post.category || '';
+        $('#tagsInput').value = Array.isArray(post.tags) ? post.tags.join(', ') : '';
         $('#statusSelect').value = post.status === 'draft' ? 'draft' : 'published';
         state.existingCover = post.cover || null;
         $('#postTimestamps').innerHTML = `创建于 ${fmt(post.createdAt, true)}<br />最后更新 ${fmt(post.updatedAt, true)}`;
@@ -304,6 +442,8 @@
     } else {
       $('#postTimestamps').textContent = '草稿在发布前不会出现在前台。';
     }
+
+    updateWordCount();
 
     renderCover();
     syncSaveButton();
@@ -333,9 +473,10 @@
     state.dirty = true;
   });
 
-  ['#titleInput', '#contentInput'].forEach((sel) => {
+  ['#titleInput', '#contentInput', '#categoryInput', '#tagsInput'].forEach((sel) => {
     $(sel).addEventListener('input', () => {
       state.dirty = true;
+      if (sel === '#contentInput') updateWordCount();
     });
   });
 
@@ -409,6 +550,8 @@
     fd.append('title', title);
     fd.append('content', content);
     fd.append('status', status);
+    fd.append('category', $('#categoryInput').value.trim());
+    fd.append('tags', $('#tagsInput').value.trim());
     if (state.coverFile) fd.append('cover', state.coverFile);
     if (state.removeCover) fd.append('removeCover', '1');
 
