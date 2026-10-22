@@ -13,6 +13,8 @@ import {
   normalizeTags,
   searchPosts,
   taxonomy,
+  getSettings,
+  setSettings,
   UPLOAD_DIR,
   ROOT_DIR,
 } from './lib/store.js';
@@ -131,6 +133,11 @@ app.get('/api/taxonomy', (_req, res) => {
   res.json(taxonomy());
 });
 
+// 前台需要的站点配置（只暴露可公开的字段）
+app.get('/api/settings', (_req, res) => {
+  res.json({ settings: getSettings() });
+});
+
 app.get('/api/search', (req, res) => {
   const q = String(req.query.q || '');
   res.json({ q: q.trim(), results: searchPosts(q) });
@@ -204,6 +211,28 @@ app.post('/api/posts/:id/comments', (req, res) => {
 });
 
 /* ---------------- 后台接口 ---------------- */
+
+app.get('/api/admin/settings', requireAuth, (_req, res) => {
+  res.json({ settings: getSettings() });
+});
+
+app.post('/api/admin/settings', requireAuth, (req, res) => {
+  const body = req.body || {};
+  const patch = {};
+
+  if (body.introEnabled !== undefined) {
+    if (typeof body.introEnabled !== 'boolean') {
+      return res.status(400).json({ error: 'introEnabled 必须是布尔值' });
+    }
+    patch.introEnabled = body.introEnabled;
+  }
+
+  if (!Object.keys(patch).length) {
+    return res.status(400).json({ error: '没有需要更新的设置项' });
+  }
+
+  res.json({ settings: setSettings(patch) });
+});
 
 app.get('/api/admin/posts', requireAuth, (_req, res) => {
   const list = db()

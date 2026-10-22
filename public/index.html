@@ -31,6 +31,8 @@
       // 在首屏绘制前决定是否显示开场，避免主页内容闪一下
       (function () {
         var el = document.getElementById('intro');
+        if (!el) return;
+
         var force = new URLSearchParams(location.search).get('intro');
         var wide = window.matchMedia('(min-width: 861px)').matches;
         var calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -38,11 +40,45 @@
         try {
           seen = localStorage.getItem('banye_intro_seen') === '1';
         } catch (e) {}
-        var show = force === '1' || (force !== '0' && wide && !calm && !seen);
-        if (show) {
+
+        // ?intro=0 强制关闭；?intro=1 强制预览（绕过开关与已看记录）
+        if (force === '0') return;
+        if (force !== '1' && (!wide || calm || seen)) return;
+
+        function show() {
           el.hidden = false;
           document.body.classList.add('intro-lock');
         }
+
+        if (force === '1') return show();
+
+        // 后台开关：先锁住滚动，拿到配置再决定，避免加载期间页面被滚动
+        document.body.classList.add('intro-lock');
+        var settled = false;
+        var timer = setTimeout(function () {
+          if (settled) return;
+          settled = true;
+          show();
+        }, 900);
+
+        function settle(enabled) {
+          if (settled) return;
+          settled = true;
+          clearTimeout(timer);
+          if (enabled) show();
+          else document.body.classList.remove('intro-lock');
+        }
+
+        fetch('/api/settings', { headers: { Accept: 'application/json' }, cache: 'no-store' })
+          .then(function (r) {
+            return r.json();
+          })
+          .then(function (data) {
+            settle(!(data && data.settings && data.settings.introEnabled === false));
+          })
+          .catch(function () {
+            settle(true);
+          });
       })();
     </script>
 

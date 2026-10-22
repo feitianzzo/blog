@@ -1058,3 +1058,155 @@ body.admin {
     display: none;
   }
 }
+
+/* ---------------- 站点设置 ---------------- */
+
+.settings-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.setting {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 26px;
+  align-items: start;
+  padding: 22px 24px;
+}
+
+.setting + .setting {
+  border-top: 1px solid var(--line-soft);
+}
+
+.setting__title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 8px;
+  font-size: 15.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.setting__state {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0;
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.setting__state.is-off {
+  background: #f1eee7;
+  color: var(--muted);
+}
+
+.setting__desc {
+  margin: 0;
+  max-width: 56ch;
+  font-size: 13.5px;
+  line-height: 1.78;
+  color: var(--ink-soft);
+}
+
+.setting__note {
+  margin: 11px 0 0;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.setting__note a {
+  margin-left: 6px;
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px dashed rgba(168, 74, 44, 0.4);
+}
+
+.setting__note a:hover {
+  border-bottom-style: solid;
+}
+
+/* 开关 */
+
+.switch {
+  position: relative;
+  display: inline-block;
+  flex: none;
+  margin-top: 2px;
+  cursor: pointer;
+}
+
+.switch input {
+  position: absolute;
+  inset: 0;
+  width: 46px;
+  height: 28px;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.switch__track {
+  display: block;
+  width: 46px;
+  height: 28px;
+  border-radius: 999px;
+  background: #dcd8cf;
+  transition: background 0.2s ease, opacity 0.2s ease;
+}
+
+.switch__thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(27, 27, 29, 0.24);
+  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.switch input:checked + .switch__track {
+  background: var(--accent);
+}
+
+.switch input:checked + .switch__track .switch__thumb {
+  transform: translateX(18px);
+}
+
+.switch input:focus-visible + .switch__track {
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.switch input:disabled {
+  cursor: default;
+}
+
+.switch input:disabled + .switch__track {
+  opacity: 0.55;
+}
+
+.switch.is-saving .switch__thumb {
+  transform: scale(0.88);
+}
+
+.switch.is-saving input:checked + .switch__track .switch__thumb {
+  transform: translateX(18px) scale(0.88);
+}
+
+@media (max-width: 680px) {
+  .setting {
+    gap: 16px;
+    padding: 18px 16px;
+  }
+
+  .setting__title {
+    font-size: 15px;
+  }
+}

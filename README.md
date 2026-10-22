@@ -55,6 +55,7 @@ npm start
 - 发布状态：立即发布 或 存为草稿（草稿不出现在前台，登录状态可预览）
 - 正文支持 Markdown 编写 / 预览切换，实时字数统计，`Ctrl/Cmd + S` 保存
 - 评论管理：独立分页签，可查看文章、删除留言
+- 站点设置：独立分页签，开关控制首页开场画面（立即对全站生效）
 - 删除二次确认；替换或删除文章时会清理无用的封面文件，删除文章时一并清理其评论
 
 ## 代码仓库
@@ -86,7 +87,7 @@ lib/store.js         文章 / 评论数据读写，字数与搜索
 lib/auth.js          账号、会话、登录限流
 public/index.html    首页（开场、筛选、列表）
 public/post.html     文章详情（正文、字数、评论）
-public/admin.html    后台（文章、评论）
+public/admin.html    后台（文章、评论、设置）
 public/assets/style.css    基础样式
 public/assets/modules.css  开场 / 搜索 / 分类标签 / 评论样式
 public/assets/intro.png    开场画面背景图
@@ -104,26 +105,29 @@ uploads/             上传的封面图
 | GET | `/api/posts/:id` | 文章详情 |
 | GET | `/api/taxonomy` | 分类与标签及各自文章数 |
 | GET | `/api/search?q=` | 站内搜索 |
+| GET | `/api/settings` | 站点设置（前台读取开关） |
 | GET | `/api/posts/:id/comments` | 文章评论 |
 | POST | `/api/posts/:id/comments` | 发表评论（`name`、`content`） |
 | POST | `/api/login` · `/api/logout` · GET `/api/session` | 登录态 |
 | GET/POST/DELETE | `/api/admin/posts…` | 后台文章管理 |
 | GET | `/api/admin/comments` | 全部评论 |
 | DELETE | `/api/admin/comments/:id` | 删除评论 |
+| GET / POST | `/api/admin/settings` | 读取 / 修改站点设置（`introEnabled`） |
 
 ## 数据与备份
 
 所有内容都在两个地方：
 
-- `data/db.json` —— 文章（标题、正文、分类、标签、状态、时间、封面路径）与评论
+- `data/db.json` —— 文章（标题、正文、分类、标签、状态、时间、封面路径）、评论与站点设置
 - `uploads/` —— 封面图片
 
 备份这两个即可完整迁移；换机器时一起拷走就能继续用。
 
 ## 开场画面
 
-- 只在桌面端（≥861px）首次进入首页时出现，记在浏览器 `localStorage` 的 `banye_intro_seen` 里。
-- 想再看一次：访问 `/?intro=1`；想临时关掉：访问 `/?intro=0`。
+- 后台「设置 → 首页开场画面」是总开关，关掉后所有访客都直接进入首页（存在 `data/db.json` 的 `settings.introEnabled`）。
+- 开启时也不是每次都出现：只在桌面端（≥861px）首次进入首页时显示，记在浏览器 `localStorage` 的 `banye_intro_seen` 里。
+- 想再看一次：访问 `/?intro=1`（绕过开关和已看记录，也可用于关闭期间预览）；想临时关掉：访问 `/?intro=0`。
 - 换背景图直接替换 `public/assets/intro.png`（建议 16:10 横图，中间偏暗更适合白色文字）。
 - 移动端与开启「减少动态效果」的系统设置下会自动跳过。
 

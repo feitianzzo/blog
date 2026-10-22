@@ -83,6 +83,9 @@
             <button class="view-tab" type="button" role="tab" data-view="comments" aria-selected="false">
               评论 <em data-comments-badge>0</em>
             </button>
+            <button class="view-tab" type="button" role="tab" data-view="settings" aria-selected="false">
+              设置
+            </button>
           </div>
 
           <div id="postsPanel">
@@ -91,6 +94,30 @@
 
           <div id="commentsPanel" hidden>
             <div id="commentListHost"></div>
+          </div>
+
+          <div id="settingsPanel" hidden>
+            <div class="settings-card">
+              <div class="setting">
+                <div class="setting__main">
+                  <h2 class="setting__title">
+                    首页开场画面
+                    <span class="setting__state" id="introState">已开启</span>
+                  </h2>
+                  <p class="setting__desc">
+                    桌面端第一次进入首页时，先显示一张全屏图片，点击任意处后上滑进入主页。移动端、以及系统开启「减少动态效果」时始终直接进入首页。
+                  </p>
+                  <p class="setting__note">
+                    每位访客只会在第一次访问时看到
+                    <a href="/?intro=1" target="_blank" rel="noopener">预览效果</a>
+                  </p>
+                </div>
+                <label class="switch">
+                  <input type="checkbox" id="introToggle" role="switch" aria-label="首页开场画面" />
+                  <span class="switch__track"><span class="switch__thumb"></span></span>
+                </label>
+              </div>
+            </div>
           </div>
         </section>
 

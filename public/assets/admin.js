@@ -15,6 +15,7 @@
   const state = {
     posts: [],
     comments: [],
+    settings: null,
     view: 'posts',
     editingId: null,
     coverFile: null,
@@ -259,22 +260,33 @@
     }
   }
 
-  /* ---------------- 视图切换：文章 / 评论 ---------------- */
+  /* ---------------- 视图切换：文章 / 评论 / 设置 ---------------- */
+
+  const VIEWS = {
+    posts: { panel: '#postsPanel', title: '文章管理' },
+    comments: { panel: '#commentsPanel', title: '评论管理' },
+    settings: { panel: '#settingsPanel', title: '站点设置' },
+  };
 
   function setView(view) {
+    if (!VIEWS[view]) view = 'posts';
     state.view = view;
-    const isPosts = view === 'posts';
-    $('#postsPanel').hidden = !isPosts;
-    $('#commentsPanel').hidden = isPosts;
-    $('#newPostBtn').hidden = !isPosts;
-    $('#pageTitle').textContent = isPosts ? '文章管理' : '评论管理';
+
+    Object.entries(VIEWS).forEach(([key, cfg]) => {
+      $(cfg.panel).hidden = key !== view;
+    });
+    $('#newPostBtn').hidden = view !== 'posts';
+    $('#pageTitle').textContent = VIEWS[view].title;
+
     $$('.view-tab').forEach((btn) => {
       const on = btn.dataset.view === view;
       btn.classList.toggle('is-active', on);
       btn.setAttribute('aria-selected', String(on));
     });
-    if (isPosts) loadPosts();
-    else loadComments();
+
+    if (view === 'posts') loadPosts();
+    else if (view === 'comments') loadComments();
+    else loadSettings();
   }
 
   function commentRowHTML(c) {
@@ -318,6 +330,55 @@
       host.innerHTML = `<div class="empty-state"><h2>加载失败</h2><p>${esc(err.message)}</p></div>`;
     }
   }
+
+  /* ---------------- 站点设置 ---------------- */
+
+  function renderIntroSetting(enabled) {
+    $('#introToggle').checked = enabled;
+    const badge = $('#introState');
+    badge.textContent = enabled ? '已开启' : '已关闭';
+    badge.classList.toggle('is-off', !enabled);
+  }
+
+  async function loadSettings() {
+    const summary = $('#listSummary');
+    try {
+      const { settings } = await api('/api/admin/settings');
+      state.settings = settings;
+      renderIntroSetting(settings.introEnabled !== false);
+      summary.textContent = '开关即时对全站访客生效';
+    } catch (err) {
+      if (err.status === 401) return showLogin();
+      summary.textContent = '加载失败';
+      toast(err.message, true);
+    }
+  }
+
+  $('#introToggle').addEventListener('change', async (e) => {
+    const input = e.target;
+    const next = input.checked;
+    const wrap = input.closest('.switch');
+    input.disabled = true;
+    wrap.classList.add('is-saving');
+    try {
+      const { settings } = await api('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ introEnabled: next }),
+      });
+      state.settings = settings;
+      renderIntroSetting(settings.introEnabled !== false);
+      toast(next ? '开场画面已开启' : '开场画面已关闭，访客直接进入首页');
+    } catch (err) {
+      if (err.status === 401) return showLogin();
+      input.checked = !next;
+      renderIntroSetting(!next);
+      toast(err.message, true);
+    } finally {
+      input.disabled = false;
+      wrap.classList.remove('is-saving');
+    }
+  });
 
   $$('.view-tab').forEach((btn) =>
     btn.addEventListener('click', () => {
