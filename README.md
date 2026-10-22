@@ -52,6 +52,12 @@ npm start
 - 正文支持 Markdown 编写 / 预览切换，`Ctrl/Cmd + S` 保存
 - 删除二次确认；替换或删除文章时会清理无用的封面文件
 
+## 代码仓库
+
+```
+https://github.com/feitianzzo/blog
+```
+
 ## 上线
 
 当前线上地址（WorkBuddy 托管）：
