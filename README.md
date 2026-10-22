@@ -52,6 +52,21 @@ npm start
 - 正文支持 Markdown 编写 / 预览切换，`Ctrl/Cmd + S` 保存
 - 删除二次确认；替换或删除文章时会清理无用的封面文件
 
+## 上线
+
+当前线上地址（WorkBuddy 托管）：
+
+```
+https://banye-blog.app.workbuddy.host/?sharecode=SZNMS4GSYQ
+```
+
+分享时必须带上完整的 `sharecode` 参数，缺少它会被拦截。
+
+更新线上内容：在 WorkBuddy 里对这个目录重新发布即可，是覆盖式更新，链接保持不变。
+注意重新发布会以本地文件为准，线上后台新写的文章会被本地的 `data/db.json` 覆盖 —— 如果主要在线上写作，发布前先把线上的 `data/db.json` 备份下来。
+
+GitHub 只托管代码，不放线上站点（GitHub Pages 只能跑静态文件，跑不了 Node 服务）。
+
 ## 目录结构
 
 ```
