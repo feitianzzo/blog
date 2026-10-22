@@ -76,6 +76,33 @@
     state.dirty = false;
   }
 
+  /* ---------------- 密码显示切换 ---------------- */
+
+  (function initPasswordToggle() {
+    const toggle = $('#togglePassword');
+    const input = $('#password');
+    if (!toggle || !input) return;
+
+    toggle.addEventListener('click', () => {
+      // 保持光标位置，切换后不丢焦点
+      const start = input.selectionStart;
+      const end = input.selectionEnd;
+      const show = input.type === 'password';
+
+      input.type = show ? 'text' : 'password';
+      toggle.setAttribute('aria-pressed', String(show));
+      toggle.setAttribute('aria-label', show ? '隐藏密码' : '显示密码');
+      toggle.title = show ? '隐藏密码' : '显示密码';
+
+      input.focus();
+      try {
+        input.setSelectionRange(start, end);
+      } catch {
+        /* 部分浏览器对 text 类型外的情况会抛错，忽略 */
+      }
+    });
+  })();
+
   /* ---------------- 登录 ---------------- */
 
   $('#loginForm').addEventListener('submit', async (e) => {

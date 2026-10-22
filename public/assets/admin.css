@@ -125,6 +125,60 @@ body.admin {
   color: #a9a59c;
 }
 
+/* 带后缀按钮的输入框（密码显示切换） */
+.input-affix {
+  position: relative;
+}
+
+.input-affix .input {
+  padding-right: 46px;
+}
+
+.affix-btn {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #a9a59c;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.affix-btn:hover {
+  color: var(--ink-soft);
+  background: #f4f1ea;
+}
+
+.affix-btn:focus-visible {
+  outline: 2px solid #cf9d8a;
+  outline-offset: 1px;
+  color: var(--ink-soft);
+}
+
+.affix-btn[aria-pressed='true'] {
+  color: var(--accent);
+}
+
+/* 眼睛 / 闭眼图标按状态切换 */
+.affix-btn .icon-eye-off {
+  display: none;
+}
+
+.affix-btn[aria-pressed='true'] .icon-eye {
+  display: none;
+}
+
+.affix-btn[aria-pressed='true'] .icon-eye-off {
+  display: block;
+}
+
 /* ---------------- 登录页 ---------------- */
 
 .login {
