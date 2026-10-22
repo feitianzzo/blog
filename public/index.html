@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>半页 · 写作与记录</title>
+    <meta name="description" content="一个安静的写作角落，记录技术、阅读与生活里那些值得留下的片段。" />
+    <meta name="theme-color" content="#fbfaf7" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231b1b1d'/%3E%3Cpath d='M11 9h10M11 15h10M11 21h6' stroke='%23fbfaf7' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="/assets/style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="wrap">
+        <a class="brand" href="/">
+          <span class="brand__dot"></span>半页<span class="brand__sub">Ban Ye · Notes</span>
+        </a>
+        <nav class="site-nav">
+          <a href="/">文章</a>
+          <a href="/admin">写文章</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="wrap">
+          <p class="hero__eyebrow">Writing · Notes</p>
+          <h1>把想清楚的事，写下来。</h1>
+          <p>一个安静的写作角落，记录技术、阅读与生活里那些值得留下的片段。</p>
+          <div class="hero__meta">
+            <span>共 <strong data-post-count>—</strong></span>
+            <span>最近更新 <strong data-last-updated>—</strong></span>
+          </div>
+        </div>
+      </section>
+
+      <section class="posts">
+        <div class="wrap">
+          <div class="posts__head">
+            <h2>最新文章</h2>
+            <span>ALL POSTS</span>
+          </div>
+          <div class="posts-grid" data-post-list></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <span>© <span id="year"></span> 半页 · 用文字留一点痕迹</span>
+        <a href="/admin">进入后台</a>
+      </div>
+    </footer>
+
+    <script>
+      document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
+    <script src="/assets/md.js"></script>
+    <script src="/assets/site.js"></script>
+  </body>
+</html>
