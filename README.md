@@ -22,18 +22,23 @@ npm start
 
 ## 管理员账号
 
-首次启动会自动生成 `data/auth.json`，默认账号：
+账号名默认 `admin`，密码**只在第一次启动时生成**：`data/auth.json` 不存在时，用默认密码 `admin123` 创建并打印到控制台；该文件一旦存在，之后一律以文件里的为准。
 
-- 账号 `admin`
-- 密码 `admin123`
+`data/` 不进版本库，所以 clone 下来的仓库是「没有账号文件」的状态，首次 `npm start` 会生成 `admin / admin123`。但如果这台机器（或线上）之前已经跑过，密码就是当时设置的那个，不是 `admin123`。
 
-**建议第一次登录后立刻修改。** 两种方式：
+**改密码 / 忘记密码**（不需要知道旧密码）：
 
-1. 用环境变量覆盖（仅在 `data/auth.json` 不存在时生效）：
-   ```bash
-   BLOG_USER=me BLOG_PASS=your-password npm start
-   ```
-2. 直接删掉 `data/auth.json` 再重启，会按环境变量重新生成。
+```bash
+npm run set-password -- '你的新密码'
+```
+
+会重建 `data/auth.json`、清空所有登录会话（旧 Cookie 立刻失效），重启服务后生效。密码用单引号包住，避免 `!` `$` 被 shell 解释。
+
+也可以用环境变量指定（仅在 `data/auth.json` 不存在时生效）：
+
+```bash
+BLOG_USER=me BLOG_PASS=your-password npm start
+```
 
 密码使用 scrypt + 随机盐存储，不保存明文；登录态是 HttpOnly Cookie，7 天有效，连续 15 分钟内输错 10 次会被临时锁定。
 
