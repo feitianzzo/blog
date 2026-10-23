@@ -630,10 +630,41 @@ body.reading-mode .post-side > .side-card:not(.side-card--toc) {
 }
 
 body.reading-mode .post-shell {
-  grid-template-columns: 264px minmax(0, 1fr);
+  grid-template-columns: clamp(260px, 28vw, 340px) minmax(0, 1fr);
   grid-template-areas: 'side main';
-  max-width: 1000px;
+  max-width: 1100px;
   padding-right: 58px;
+}
+
+/* 阅读模式下目录放大放长，尽量把整篇大纲都摊开 */
+body.reading-mode .side-card--toc .side-card__head {
+  padding: 17px 18px 11px;
+}
+
+body.reading-mode .side-card--toc .side-card__head h2 {
+  font-size: 15px;
+  letter-spacing: 0.08em;
+}
+
+body.reading-mode .side-card--toc .side-card__count {
+  font-size: 12.5px;
+}
+
+body.reading-mode .toc {
+  max-height: min(66vh, 640px);
+  padding: 0 10px 14px;
+  gap: 2px;
+}
+
+body.reading-mode .toc__link {
+  font-size: 14.5px;
+  line-height: 1.6;
+  padding: 8px 10px 8px 12px;
+}
+
+body.reading-mode .toc__link.is-sub {
+  font-size: 13.5px;
+  padding-left: 26px;
 }
 
 /* 阅读模式内容变窄，工具条改为贴屏幕右下角，位置不变 */
