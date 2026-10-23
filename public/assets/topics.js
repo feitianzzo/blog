@@ -22,7 +22,8 @@
     const kind = isTags ? 'tags' : 'categories';
 
     document.title = `${isTags ? '标签' : '分类'} · 半页`;
-    document.querySelector('[data-topic-eyebrow]').textContent = isTags ? 'Tags' : 'Categories';
+    const eyebrow = document.querySelector('[data-topic-eyebrow]');
+    if (eyebrow) eyebrow.textContent = isTags ? '标签' : '分类';
     document.querySelector('[data-topic-title]').textContent = isTags ? '标签' : '分类';
     document.querySelector('[data-topic-desc]').textContent = isTags
       ? '文章身上的关键词，点进去可以看到带同一个标签的全部文章。'

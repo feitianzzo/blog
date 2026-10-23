@@ -131,7 +131,7 @@
         </div>
         <div class="search__body" data-search-results></div>
         <div class="search__foot">
-          <span>↑ ↓ 选择 · Enter 打开 · Esc 关闭</span>
+          <span>↑ ↓ 选择 · 回车打开 · Esc 关闭</span>
           <span data-search-tip>输入关键词开始搜索</span>
         </div>
       </div>`;
@@ -391,19 +391,12 @@
     const totalWords = document.querySelector('[data-total-words]');
     const updated = document.querySelector('[data-last-updated]');
     const countLabel = document.querySelector('[data-list-count]');
-    const catChips = document.querySelector('[data-category-chips]');
-    const tagChips = document.querySelector('[data-tag-chips]');
 
     list.innerHTML = skeleton(4);
 
-    function chipHTML(label, count, href) {
-      return `<a class="chip" href="${esc(href)}"><span>${esc(label)}</span><em>${count}</em></a>`;
-    }
-
     try {
-      const [{ posts }, tax, conf] = await Promise.all([
+      const [{ posts }, conf] = await Promise.all([
         getJSON('/api/posts'),
-        getJSON('/api/taxonomy'),
         getJSON('/api/settings').catch(() => ({ settings: {} })),
       ]);
 
@@ -415,19 +408,6 @@
         updated.textContent = fmtDate(posts[0].publishedAt || posts[0].createdAt).full;
       }
 
-      if (catChips) {
-        const total = tax.categories.reduce((sum, c) => sum + c.count, 0);
-        catChips.innerHTML =
-          chipHTML('全部', total, '/?intro=0') +
-          (tax.categories.map((c) => chipHTML(c.name, c.count, categoryHref(c.name))).join('') ||
-            '<span class="chips__empty">还没有分类，写文章时可以加上</span>');
-      }
-      if (tagChips) {
-        tagChips.innerHTML =
-          tax.tags.map((t) => chipHTML('#' + t.name, t.count, tagHref(t.name))).join('') ||
-          '<span class="chips__empty">还没有标签，写文章时可以加上</span>';
-      }
-
       if (!posts.length) {
         list.style.gridTemplateColumns = '1fr';
         list.innerHTML = `<div class="empty">
@@ -437,7 +417,7 @@
         return;
       }
 
-      if (countLabel) countLabel.textContent = `${posts.length} 篇 · ALL POSTS`;
+      if (countLabel) countLabel.textContent = `${posts.length} 篇 · 全部文章`;
       list.innerHTML = posts.map(cardHTML).join('');
     } catch (err) {
       list.style.gridTemplateColumns = '1fr';
@@ -797,18 +777,14 @@
           </svg>
           返回文章列表
         </a>
-        <h1 class="article__title">${esc(post.title)}</h1>
-        <div class="article__meta">
-          ${meta.map((m) => `<span>${esc(m)}</span>`).join('<span class="dot"></span>')}
-        </div>
-        ${
-          post.category || tagList
-            ? `<div class="article__tax">
-                ${post.category ? `<a class="tag tag--cat" href="${categoryHref(post.category)}">${esc(post.category)}</a>` : ''}
-                ${tagList}
-              </div>`
-            : ''
-        }
+        <header class="article__head">
+          ${post.category ? `<div class="article__cats"><a class="tag tag--cat" href="${categoryHref(post.category)}">${esc(post.category)}</a></div>` : ''}
+          ${tagList ? `<div class="article__tags">${tagList}</div>` : ''}
+          <h1 class="article__title">${esc(post.title)}</h1>
+          <div class="article__meta">
+            ${meta.map((m) => `<span>${esc(m)}</span>`).join('<span class="dot"></span>')}
+          </div>
+        </header>
         ${post.cover ? `<figure class="article__cover"><img src="${esc(post.cover)}" alt="${esc(post.title)}" /></figure>` : ''}
         <div class="prose">${window.renderMarkdown(post.content)}</div>
         <div class="article__footer">

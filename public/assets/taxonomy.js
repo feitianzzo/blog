@@ -28,7 +28,7 @@
     document.title = `${isTag ? `#${info.name}` : info.name} · 半页`;
 
     // 静态文案先就位，避免空着
-    document.querySelector('[data-tax-eyebrow]').textContent = isTag ? 'Tag' : 'Category';
+    document.querySelector('[data-tax-eyebrow]').textContent = isTag ? '标签' : '分类';
     document.querySelector('[data-tax-title]').textContent = isTag ? `#${info.name}` : info.name;
     const back = document.querySelector('[data-back]');
     if (back) back.href = isTag ? '/tags' : '/categories';
@@ -37,8 +37,8 @@
 
     list.innerHTML = `<div class="empty"><h3>加载中…</h3></div>`;
 
-    Promise.all([UI.getJSON('/api/posts'), UI.getJSON('/api/taxonomy')])
-      .then(([{ posts }, tax]) => {
+    UI.getJSON('/api/posts')
+      .then(({ posts }) => {
         const matched = posts.filter((p) =>
           isTag ? (p.tags || []).includes(info.name) : p.category === info.name
         );
@@ -49,21 +49,6 @@
           meta.innerHTML = matched.length
             ? `<span>共 ${matched.length} 篇文章</span>${latest ? `<span class="dot"></span><span>最近更新 ${UI.esc(latest)}</span>` : ''}`
             : '<span>暂无文章</span>';
-        }
-
-        // 同类目下的其他入口
-        const siblings = document.querySelector('[data-tax-siblings]');
-        if (siblings) {
-          const pool = isTag ? tax.tags || [] : tax.categories || [];
-          siblings.innerHTML = pool
-            .filter((item) => item.name !== info.name)
-            .slice(0, 12)
-            .map((item) =>
-              isTag
-                ? `<a class="tag" href="${UI.tagHref(item.name)}">#${UI.esc(item.name)}</a>`
-                : `<a class="tag" href="${UI.categoryHref(item.name)}">${UI.esc(item.name)}</a>`
-            )
-            .join('');
         }
 
         if (!matched.length) {
