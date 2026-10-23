@@ -25,7 +25,7 @@
     }
 
     const isTag = info.kind === 'tag';
-    document.title = `${isTag ? `#${info.name}` : info.name} · 半页`;
+    document.title = `${isTag ? `#${info.name}` : info.name} · FeiTian`;
 
     // 静态文案先就位，避免空着
     document.querySelector('[data-tax-eyebrow]').textContent = isTag ? '标签' : '分类';

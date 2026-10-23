@@ -12,6 +12,8 @@
       "'": '&#39;',
     }[c]));
 
+  let syncToTop = () => {};
+
   const state = {
     posts: [],
     comments: [],
@@ -102,6 +104,7 @@
     $('#editorView').hidden = true;
     state.editingId = null;
     state.dirty = false;
+    syncToTop();
   }
 
   /* ---------------- 密码显示切换 ---------------- */
@@ -276,6 +279,7 @@
       $(cfg.panel).hidden = key !== view;
     });
     $('#newPostBtn').hidden = view !== 'posts';
+    $('#importBtn').hidden = view !== 'posts';
     $('#pageTitle').textContent = VIEWS[view].title;
 
     $$('.view-tab').forEach((btn) => {
@@ -514,6 +518,147 @@
 
   $('#newPostBtn').addEventListener('click', () => openEditor(null));
 
+  /* ---------------- 导入 Markdown ---------------- */
+
+  // 支持 YAML front matter（title / category / tags），没有就退化为「首个 # 标题」或文件名
+  function parseImport(raw, filename) {
+    let text = String(raw || '').replace(/\r\n?/g, '\n');
+    let title = '';
+    let category = '';
+    let tags = [];
+
+    const fm = text.match(/^\uFEFF?---\n([\s\S]*?)\n---\n?/);
+    if (fm) {
+      const block = fm[1];
+      text = text.slice(fm[0].length);
+      const get = (keys) => {
+        for (const key of keys) {
+          const m = block.match(new RegExp(`^${key}\\s*:\\s*(.+)$`, 'mi'));
+          if (m) return m[1].trim();
+        }
+        return '';
+      };
+      title = get(['title']).replace(/^['"]|['"]$/g, '');
+      category = get(['category', 'categories']).replace(/^['"]|['"]$/g, '');
+      const tagLine = get(['tags', 'tag']);
+      if (tagLine) {
+        tags = tagLine
+          .replace(/^\[|\]$/g, '')
+          .split(/[,，、]/)
+          .map((t) => t.trim().replace(/^['"]|['"]$/g, ''))
+          .filter(Boolean);
+      }
+    }
+
+    if (!title) {
+      const head = text.replace(/^\s+/, '');
+      if (head.startsWith('# ')) {
+        const line = head.split('\n')[0];
+        title = line.replace(/^#\s+/, '').trim();
+        text = head.slice(line.length).replace(/^\n+/, '');
+      }
+    }
+
+    if (!title) {
+      title = filename.replace(/\.[^.]+$/, '').replace(/^[\d\-_.\s]+/, '').trim();
+    }
+
+    return {
+      title: title.slice(0, 160),
+      content: text.trim().slice(0, 200000),
+      category: category.slice(0, 24),
+      tags: tags.slice(0, 8).join(','),
+    };
+  }
+
+  async function importFiles(files) {
+    const picked = (files || []).filter((f) => /\.(md|markdown|txt)$/i.test(f.name));
+    if (!picked.length) {
+      toast('请选择 .md / .markdown / .txt 文件', true);
+      return;
+    }
+
+    if (!state.posts.length) {
+      try {
+        await loadPosts();
+      } catch {
+        /* 忽略，后面按空列表处理 */
+      }
+    }
+
+    const known = new Set(state.posts.map((p) => p.title));
+    const btn = $('#importBtn');
+    const original = btn.innerHTML;
+    btn.disabled = true;
+    btn.textContent = '导入中…';
+
+    let ok = 0;
+    let skip = 0;
+    let fail = 0;
+
+    for (let i = 0; i < picked.length; i++) {
+      btn.textContent = `导入中 ${i + 1}/${picked.length}`;
+      try {
+        const file = picked[i];
+        const parsed = parseImport(await file.text(), file.name);
+        if (!parsed.title || !parsed.content) {
+          fail += 1;
+          continue;
+        }
+        if (known.has(parsed.title)) {
+          skip += 1;
+          continue;
+        }
+        await api('/api/admin/posts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...parsed, status: 'published' }),
+        });
+        known.add(parsed.title);
+        ok += 1;
+      } catch {
+        fail += 1;
+      }
+    }
+
+    btn.disabled = false;
+    btn.innerHTML = original;
+
+    const bits = [`成功 ${ok} 篇`];
+    if (skip) bits.push(`跳过重复 ${skip} 篇`);
+    if (fail) bits.push(`失败 ${fail} 篇`);
+    toast(`导入完成：${bits.join('，')}`, ok === 0);
+
+    if (ok && state.view === 'posts') loadPosts();
+  }
+
+  $('#importBtn').addEventListener('click', () => $('#importInput').click());
+
+  $('#importInput').addEventListener('change', (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    if (files.length) importFiles(files);
+  });
+
+  /* ---------------- 回到顶部 ---------------- */
+
+  function initToTop() {
+    const btn = $('#toTopBtn');
+    if (!btn) return;
+    btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+    syncToTop = () => {
+      const inEditor = !$('#editorView').hidden;
+      btn.hidden = !inEditor;
+      btn.classList.toggle('is-idle', window.scrollY < 40);
+      btn.disabled = !inEditor;
+    };
+    window.addEventListener('scroll', syncToTop, { passive: true });
+    window.addEventListener('resize', syncToTop);
+    syncToTop();
+  }
+
+  initToTop();
+
   /* ---------------- 编辑器 ---------------- */
 
   const COVER_PLACEHOLDER = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
@@ -604,6 +749,7 @@
     syncSaveButton();
     $('#listView').hidden = true;
     $('#editorView').hidden = false;
+    syncToTop();
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setTimeout(() => $('#titleInput').focus(), 80);
   }

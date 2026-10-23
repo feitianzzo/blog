@@ -1,4 +1,4 @@
-# 半页 · 一个安静的博客
+# FeiTian · 一个安静的博客
 
 带后台管理的轻量博客：文章列表、文章详情、登录后可发布 / 编辑 / 删除文章，支持封面图上传。
 无前端框架、无数据库服务，`node server.js` 就能跑起来。
@@ -69,6 +69,7 @@ BLOG_USER=me BLOG_PASS=your-password npm start
 - 发布状态：立即发布 或 存为草稿（草稿不出现在前台，登录状态可预览）
 - 正文支持 Markdown 编写 / 预览切换，实时字数统计，`Ctrl/Cmd + S` 保存
 - 评论管理：独立分页签，可查看文章、删除留言
+- 文章导入：列表页「导入」可选择多个 `.md` / `.markdown` / `.txt`，自动读取 front matter（title / category / tags），没有就取正文首个 `#` 标题或文件名，同名文章自动跳过，导入后直接发布
 - 站点设置：独立分页签，可配置开场画面开关、开场图片（支持上传）与开场两行文字、主页大标题 / 个性签名 / 个人介绍、昵称、头像地址、Github 链接与公告；保存后前台立即生效
 - 删除二次确认；替换或删除文章时会清理无用的封面文件，删除文章时一并清理其评论
 
@@ -171,4 +172,4 @@ uploads/             上传的封面图
 
 - 单进程、文件存储，适合个人博客的量级；文章量很大或需要多实例时再换数据库。
 - 若部署到公网，建议放在 Nginx / Caddy 后面并开启 HTTPS，同时把 `Cookie` 的 `Secure` 打开（`lib/auth.js` 的 `cookieHeader`）。
-- 修改站点名称与标语：`public/index.html`、`public/post.html`、`public/admin.html` 中的「半页」，以及 `public/assets/site.js` 顶部的 `SITE` 配置。
+- 修改站点名称与标语：`public/index.html`、`public/post.html`、`public/admin.html` 中的「FeiTian」，以及 `public/assets/site.js` 顶部的 `SITE` 配置。
