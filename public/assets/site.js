@@ -670,6 +670,82 @@
     </nav>`;
   }
 
+  /* ---------------- 代码块复制 ---------------- */
+
+  const COPY_ICON =
+    '<svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">' +
+    '<rect x="7.4" y="7.4" width="9" height="9" rx="1.6" />' +
+    '<path d="M12.6 7.4V5.2a1.6 1.6 0 0 0-1.6-1.6H5.2a1.6 1.6 0 0 0-1.6 1.6v5.8a1.6 1.6 0 0 0 1.6 1.6h2.2" stroke-linecap="round" />' +
+    '</svg>';
+
+  async function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.cssText = 'position:fixed;top:-1000px;left:-1000px;opacity:0';
+    document.body.appendChild(ta);
+    ta.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    if (!ok) throw new Error('复制失败');
+  }
+
+  // 给正文里的每个代码块左上角加一个复制按钮
+  function enhanceCodeBlocks(root) {
+    if (!root) return;
+    root.querySelectorAll('pre').forEach((pre) => {
+      if (pre.closest('.code-block')) return;
+
+      const wrap = document.createElement('div');
+      wrap.className = 'code-block';
+      pre.parentNode.insertBefore(wrap, pre);
+      wrap.appendChild(pre);
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'code-copy';
+      btn.setAttribute('aria-label', '复制代码');
+      btn.innerHTML = `${COPY_ICON}<span>复制</span>`;
+      wrap.appendChild(btn);
+
+      const label = btn.querySelector('span');
+      let timer = null;
+      btn.addEventListener('click', async () => {
+        try {
+          await copyText(pre.innerText.replace(/\n$/, ''));
+          btn.classList.remove('is-error');
+          btn.classList.add('is-done');
+          label.textContent = '已复制';
+        } catch {
+          btn.classList.remove('is-done');
+          btn.classList.add('is-error');
+          label.textContent = '复制失败';
+        }
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          btn.classList.remove('is-done', 'is-error');
+          label.textContent = '复制';
+        }, 1800);
+      });
+    });
+  }
+
+  // 宽表格在小屏会撑破页面，包一层横向滚动容器
+  function enhanceTables(root) {
+    if (!root) return;
+    root.querySelectorAll('table').forEach((table) => {
+      if (table.parentElement && table.parentElement.classList.contains('table-scroll')) return;
+      const wrap = document.createElement('div');
+      wrap.className = 'table-scroll';
+      table.parentNode.insertBefore(wrap, table);
+      wrap.appendChild(table);
+    });
+  }
+
   /* ---------------- 文章页：右侧功能栏 ---------------- */
 
   function initRail() {
@@ -811,6 +887,8 @@
         <div class="prose">${window.renderMarkdown(post.content)}</div>
         ${postNavHTML(prev, next)}`;
 
+      enhanceCodeBlocks(host);
+      enhanceTables(host);
       renderSide(detail, posts, tax, settings);
       buildToc();
       await initComments(id, post.commentCount || 0);
