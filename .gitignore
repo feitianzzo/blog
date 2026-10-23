@@ -4,3 +4,6 @@ data/
 .DS_Store
 .workbuddy/
 .wbapp_*.genie
+
+# 线上数据备份
+backup/
