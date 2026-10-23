@@ -554,6 +554,21 @@
     side.classList.toggle('is-scrollable', side.scrollHeight - side.clientHeight > 4);
   }
 
+  // 让左栏吸附在「目录正好位于视口中间」的位置：
+  // 滚动时整栏先跟着正文下滑，目录到达中线后停住
+  function syncSideAnchor() {
+    const side = document.querySelector('.post-side');
+    const toc = side && side.querySelector('.side-card--toc');
+    if (!side) return;
+    if (!toc || !window.matchMedia('(min-width: 1140px)').matches) {
+      side.style.removeProperty('--side-top');
+      return;
+    }
+    const center = toc.offsetTop + toc.offsetHeight / 2;
+    const top = Math.round(window.innerHeight / 2 - center);
+    side.style.setProperty('--side-top', `${Math.min(top, 80)}px`);
+  }
+
   /* ---------------- 文章页：目录 ---------------- */
 
   function buildToc() {
@@ -670,6 +685,7 @@
         readingBtn.setAttribute('aria-pressed', String(on));
         readingBtn.setAttribute('data-tip', on ? '退出阅读模式' : '阅读模式');
       }
+      syncSideAnchor();
       try {
         sessionStorage.setItem('banye_reading', on ? '1' : '0');
       } catch {
@@ -759,12 +775,13 @@
       const date = fmtDate(post.publishedAt || post.createdAt);
       document.title = `${post.title} · ${SITE.name}`;
 
+      const updated = fmtDate(post.updatedAt || post.publishedAt || post.createdAt);
       const meta = [
-        date.full,
-        `约 ${readingTime(post.words)} 分钟`,
+        `发表于 ${date.short}`,
+        `更新于 ${updated.short}`,
         `共 ${num(post.words)} 字`,
-        post.commentCount ? `${num(post.commentCount)} 条评论` : '',
-      ].filter(Boolean);
+        `约 ${readingTime(post.words)} 分钟`,
+      ];
 
       const tagList = (post.tags || [])
         .map((t) => `<a class="tag" href="${tagHref(t)}">#${esc(t)}</a>`)
@@ -778,19 +795,20 @@
           返回文章列表
         </a>
         <header class="article__head">
-          ${post.category ? `<div class="article__cats"><a class="tag tag--cat" href="${categoryHref(post.category)}">${esc(post.category)}</a></div>` : ''}
-          ${tagList ? `<div class="article__tags">${tagList}</div>` : ''}
           <h1 class="article__title">${esc(post.title)}</h1>
           <div class="article__meta">
             ${meta.map((m) => `<span>${esc(m)}</span>`).join('<span class="dot"></span>')}
           </div>
+          ${
+            post.category || tagList
+              ? `<div class="article__tax">
+                  ${post.category ? `<a class="tag tag--cat" href="${categoryHref(post.category)}">${esc(post.category)}</a>` : ''}
+                  ${tagList}
+                </div>`
+              : ''
+          }
         </header>
-        ${post.cover ? `<figure class="article__cover"><img src="${esc(post.cover)}" alt="${esc(post.title)}" /></figure>` : ''}
         <div class="prose">${window.renderMarkdown(post.content)}</div>
-        <div class="article__footer">
-          <span>写于 ${date.short} · 共 ${num(post.words)} 字</span>
-          <a href="/?intro=0">继续看看别的 →</a>
-        </div>
         ${postNavHTML(prev, next)}`;
 
       renderSide(detail, posts, tax, settings);
@@ -798,7 +816,12 @@
       await initComments(id, post.commentCount || 0);
       initRail();
       syncSideScroll();
-      window.addEventListener('resize', syncSideScroll);
+      syncSideAnchor();
+      window.addEventListener('load', syncSideAnchor);
+      window.addEventListener('resize', () => {
+        syncSideScroll();
+        syncSideAnchor();
+      });
     } catch (err) {
       host.innerHTML = `<div class="empty">
         <h3>文章不存在</h3>
