@@ -1440,39 +1440,3 @@ body.admin {
     flex-wrap: wrap;
   }
 }
-
-/* ---------------- 正文排版设置 ---------------- */
-
-.color-field {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.color-field__picker {
-  width: 44px;
-  height: 38px;
-  flex: none;
-  padding: 2px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fff;
-  cursor: pointer;
-}
-
-.color-field .input {
-  flex: 1;
-  min-width: 0;
-}
-
-.typo-preview {
-  margin: 16px 0 0;
-  padding: 14px 16px;
-  border: 1px dashed var(--line);
-  border-radius: 10px;
-  background: #fcfbf8;
-  font-size: 17px;
-  line-height: 1.9;
-  color: #26262a;
-  max-width: 760px;
-}

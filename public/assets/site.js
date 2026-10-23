@@ -486,21 +486,6 @@
     window.scrollTo({ top, behavior: 'smooth' });
   }
 
-  /* ---------------- 正文排版（字号 / 颜色） ---------------- */
-
-  function applyReadingStyle(settings) {
-    const root = document.documentElement;
-    const conf = settings || {};
-
-    const size = Number(conf.readFontSize);
-    if (size >= 12 && size <= 26) root.style.setProperty('--read-size', `${size}px`);
-    else root.style.removeProperty('--read-size');
-
-    const color = String(conf.readColor || '').trim();
-    if (/^#[0-9a-f]{3,8}$/i.test(color)) root.style.setProperty('--read-color', color);
-    else root.style.removeProperty('--read-color');
-  }
-
   /* ---------------- 文章页：左侧栏 ---------------- */
 
   function miniItemHTML(post) {    const tags = (post.tags || [])
@@ -929,7 +914,6 @@
         <div class="prose">${window.renderMarkdown(post.content)}</div>
         ${postNavHTML(prev, next)}`;
 
-      applyReadingStyle(settings);
       enhanceCodeBlocks(host);
       enhanceTables(host);
       renderSide(detail, posts, tax, settings);

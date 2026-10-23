@@ -167,7 +167,6 @@ uploads/             上传的封面图
 | `authorName` / `authorAvatar` | 首页左栏与文章页左栏的头像、昵称 |
 | `announcement` | 首页左栏与文章页左栏的公告卡片 |
 | `links` | 个人链接数组（`name` / `url` / `icon`），首页头像卡 + 文章页左栏 |
-| `readFontSize` / `readColor` | 文章正文字号（px）与文字颜色 |
 
 新增字段时，`lib/store.js` 的 `DEFAULT_SETTINGS` / `TEXT_SETTINGS`、`server.js` 的 `TEXT_FIELDS`、`public/assets/admin.js` 的 `PROFILE_FIELDS` 与 `public/assets/site.js` 的渲染函数需要一一对应。
 

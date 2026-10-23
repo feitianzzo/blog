@@ -348,8 +348,6 @@
     introSub: '#introSubInput',
     heroTitle: '#heroTitleInput',
     signature: '#signatureInput',
-    readFontSize: '#readFontSizeInput',
-    readColor: '#readColorInput',
     authorName: '#authorNameInput',
     authorBio: '#authorBioInput',
     authorAvatar: '#authorAvatarInput',
@@ -361,44 +359,6 @@
     if (!img) return;
     const src = ($('#introImageInput').value || '').trim() || '/assets/intro.png';
     if (img.getAttribute('src') !== src) img.src = src;
-  }
-
-  /* ---------------- 正文排版预览 ---------------- */
-
-  function normalizeHex(value) {
-    const v = String(value || '').trim();
-    if (/^#[0-9a-f]{6}$/i.test(v)) return v.toLowerCase();
-    if (/^#[0-9a-f]{3}$/i.test(v)) return `#${v.slice(1).split('').map((c) => c + c).join('')}`.toLowerCase();
-    return '';
-  }
-
-  function syncTypoPreview() {
-    const preview = $('#typoPreview');
-    const sizeInput = $('#readFontSizeInput');
-    const colorInput = $('#readColorInput');
-    if (!preview || !sizeInput || !colorInput) return;
-
-    const size = Number(sizeInput.value);
-    const color = normalizeHex(colorInput.value);
-    preview.style.fontSize = size >= 12 && size <= 26 ? `${size}px` : '';
-    preview.style.color = color || '';
-
-    const picker = $('#readColorPicker');
-    if (picker && color) picker.value = color;
-  }
-
-  ['#readFontSizeInput', '#readColorInput'].forEach((sel) => {
-    const el = $(sel);
-    if (el) el.addEventListener('input', syncTypoPreview);
-  });
-
-  const colorPicker = $('#readColorPicker');
-  if (colorPicker) {
-    colorPicker.addEventListener('input', (e) => {
-      const input = $('#readColorInput');
-      if (input) input.value = e.target.value;
-      syncTypoPreview();
-    });
   }
 
   /* ---------------- 个人链接 ---------------- */
@@ -468,7 +428,6 @@
     });
     updateIntroPreview();
     renderLinkEditor(settings.links);
-    syncTypoPreview();
   }
 
   function collectProfile() {

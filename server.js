@@ -235,8 +235,6 @@ app.post('/api/admin/settings', requireAuth, (req, res) => {
   }
 
   const TEXT_FIELDS = {
-    readFontSize: 8,
-    readColor: 20,
     introImage: 300,
     introTitle: 80,
     introSub: 160,
