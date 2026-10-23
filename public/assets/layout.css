@@ -285,16 +285,20 @@
   color: var(--muted);
 }
 
-/* ---------------- 右侧功能栏 ---------------- */
+/* ---------------- 右侧功能栏（贴最右侧、靠下悬浮） ---------------- */
 
 .post-rail {
   grid-area: rail;
+  align-self: end;
   position: sticky;
-  top: calc(var(--header-h) + 22px);
+  top: auto;
+  bottom: 26px;
+  z-index: 45;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding-top: 34px;
+  padding-top: 0;
+  margin-bottom: 8px;
 }
 
 .rail__btn {
@@ -307,6 +311,7 @@
   border-radius: 12px;
   background: var(--surface);
   color: var(--muted);
+  box-shadow: 0 8px 20px -16px rgba(30, 24, 20, 0.45);
   transition: color 0.16s ease, border-color 0.16s ease, background 0.16s ease, transform 0.16s ease;
 }
 
@@ -619,9 +624,17 @@ body.reading-mode .post-side {
 }
 
 body.reading-mode .post-shell {
-  grid-template-columns: minmax(0, 1fr) 58px;
-  grid-template-areas: 'main rail';
-  max-width: 950px;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'main';
+  max-width: 900px;
+}
+
+/* 阅读模式内容变窄，工具条改为贴屏幕右下角，位置不变 */
+body.reading-mode .post-rail {
+  position: fixed;
+  right: 22px;
+  bottom: 24px;
+  align-self: auto;
 }
 
 body.reading-mode .post-shell .article {
@@ -639,7 +652,7 @@ body.reading-mode .prose {
 }
 
 body.reading-mode .post-rail {
-  padding-top: 46px;
+  padding-top: 0;
 }
 
 /* ---------------- 响应式 ---------------- */
