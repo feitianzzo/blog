@@ -473,8 +473,7 @@
 
   /* ---------------- 文章页：左侧栏 ---------------- */
 
-  function miniItemHTML(post) {
-    const tags = (post.tags || [])
+  function miniItemHTML(post) {    const tags = (post.tags || [])
       .slice(0, 3)
       .map((t) => `<span class="mini__tag">#${esc(t)}</span>`)
       .join('');
@@ -568,6 +567,13 @@
     }
   }
 
+  // 侧栏内容超出视口时给它一个底部渐隐，提示还能继续滚
+  function syncSideScroll() {
+    const side = document.querySelector('.post-side');
+    if (!side) return;
+    side.classList.toggle('is-scrollable', side.scrollHeight - side.clientHeight > 4);
+  }
+
   /* ---------------- 文章页：目录 ---------------- */
 
   function buildToc() {
@@ -599,6 +605,21 @@
 
     const links = Array.from(host.querySelectorAll('.toc__link'));
     let ticking = false;
+    let activeIndex = -1;
+
+    // 让当前小节始终停在目录列表的中间一行
+    const centerLink = (link) => {
+      if (!link) return;
+      const hostRect = host.getBoundingClientRect();
+      const rect = link.getBoundingClientRect();
+      if (!hostRect.height || !rect.height) return;
+      const delta = rect.top + rect.height / 2 - (hostRect.top + hostRect.height / 2);
+      if (Math.abs(delta) < 6) return;
+      const max = host.scrollHeight - host.clientHeight;
+      const top = Math.max(0, Math.min(host.scrollTop + delta, max));
+      host.scrollTo({ top, behavior: 'smooth' });
+    };
+
     const spy = () => {
       const line = window.scrollY + 120;
       let active = 0;
@@ -606,6 +627,10 @@
         if (h.getBoundingClientRect().top + window.scrollY <= line) active = i;
       });
       links.forEach((a, i) => a.classList.toggle('is-active', i === active));
+      if (active !== activeIndex) {
+        activeIndex = active;
+        centerLink(links[active]);
+      }
     };
     const onScroll = () => {
       if (ticking) return;
@@ -796,6 +821,8 @@
       buildToc();
       await initComments(id, post.commentCount || 0);
       initRail();
+      syncSideScroll();
+      window.addEventListener('resize', syncSideScroll);
     } catch (err) {
       host.innerHTML = `<div class="empty">
         <h3>文章不存在</h3>
