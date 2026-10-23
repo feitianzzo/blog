@@ -11,6 +11,7 @@ import {
   newId,
   publicPost,
   normalizeTags,
+  normalizeLinks,
   searchPosts,
   taxonomy,
   getSettings,
@@ -251,6 +252,13 @@ app.post('/api/admin/settings', requireAuth, (req, res) => {
       return res.status(400).json({ error: `${key} 必须是字符串` });
     }
     patch[key] = body[key].trim().slice(0, max);
+  }
+
+  if (body.links !== undefined) {
+    if (!Array.isArray(body.links)) {
+      return res.status(400).json({ error: 'links 必须是数组' });
+    }
+    patch.links = normalizeLinks(body.links);
   }
 
   if (!Object.keys(patch).length) {

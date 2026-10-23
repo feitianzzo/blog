@@ -188,6 +188,24 @@
               </div>
             </div>
 
+            <!-- 个人链接 -->
+            <div class="settings-card settings-card--form">
+              <div class="setting setting--form">
+                <div class="setting__main">
+                  <h2 class="setting__title">个人链接</h2>
+                  <p class="setting__desc">
+                    显示在首页头像卡与文章页左栏。图标留空会按网址自动识别（GitHub、B 站、YouTube、X、Telegram、邮箱、RSS 等）；也可以填 emoji，或点「上传图标」用自己的图片。
+                  </p>
+                  <div class="link-editor" data-link-editor></div>
+                  <div class="link-editor__foot">
+                    <button class="btn btn--sm" id="addLinkBtn" type="button">+ 添加链接</button>
+                    <span class="side-note">最多 12 个，按列表顺序显示</span>
+                  </div>
+                  <input type="file" id="linkIconFile" accept="image/jpeg,image/png,image/webp,image/gif" hidden />
+                </div>
+              </div>
+            </div>
+
             <!-- 站长资料 -->
             <div class="settings-card settings-card--form">
               <div class="setting setting--form">
@@ -202,10 +220,6 @@
                       <input class="input" id="authorNameInput" maxlength="24" placeholder="FeiTian" />
                     </label>
                     <label class="field">
-                      <span class="field__label">Github 链接</span>
-                      <input class="input" id="githubUrlInput" maxlength="300" placeholder="https://github.com/yourname" />
-                    </label>
-                    <label class="field field--full">
                       <span class="field__label">头像地址</span>
                       <input class="input" id="authorAvatarInput" maxlength="300" placeholder="/assets/avatar.svg" />
                     </label>
@@ -320,6 +334,7 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script src="/assets/md.js"></script>
+    <script src="/assets/icons.js"></script>
     <script src="/assets/admin.js"></script>
   </body>
 </html>

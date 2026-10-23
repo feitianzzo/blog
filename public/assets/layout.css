@@ -1643,3 +1643,104 @@ html[data-theme='dark'] .home-signature {
   margin: 0;
   min-width: 100%;
 }
+
+/* ---------------- 个人链接（首页名片 / 文章页左栏） ---------------- */
+
+.social-links,
+.profile__links,
+.home-avatar__links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.profile__links {
+  margin-top: 2px;
+}
+
+.home-avatar__links {
+  margin-top: 12px;
+}
+
+.social-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: 12.5px;
+  line-height: 1.6;
+  transition: color 0.16s ease, border-color 0.16s ease, background 0.16s ease, transform 0.16s ease;
+}
+
+.social-link:hover {
+  color: var(--accent);
+  border-color: #e2cfc3;
+  background: var(--accent-soft);
+  transform: translateY(-1px);
+}
+
+.social-link__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+
+.social-link__icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 3px;
+}
+
+.social-link__icon .link-emoji {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.home-avatar__links .social-link {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+/* 只有一个链接时，占满整行并做成果断的主按钮 */
+.social-links--single .social-link {
+  width: 100%;
+  justify-content: center;
+  padding: 10px 14px;
+  border: 0;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.social-links--single .social-link:hover {
+  background: var(--ink);
+  color: var(--bg);
+  opacity: 0.88;
+  transform: none;
+}
+
+html[data-theme='dark'] .social-link {
+  background: var(--surface);
+  border-color: var(--line);
+}
+
+html[data-theme='dark'] .social-link:hover {
+  background: var(--accent-soft);
+  border-color: #4d382c;
+}
+
+html[data-theme='dark'] .social-links--single .social-link {
+  background: #e9e7e2;
+  color: #14161a;
+}

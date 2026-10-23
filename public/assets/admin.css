@@ -1379,3 +1379,102 @@ body.admin {
 .to-top.is-idle {
   opacity: 0.45;
 }
+
+/* ---------------- 个人链接编辑 ---------------- */
+
+.link-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 16px 0 14px;
+  max-width: 760px;
+}
+
+.link-editor__empty {
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px dashed var(--line);
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.link-editor__foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.link-row {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 14px;
+  background: #fcfbf8;
+}
+
+.link-row__main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.link-row__icon {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink-soft);
+}
+
+.link-row__icon img {
+  width: 18px;
+  height: 18px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.link-row__icon .link-emoji {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.link-row__name {
+  width: 132px;
+  flex: none;
+}
+
+.link-row__url {
+  flex: 1;
+  min-width: 0;
+}
+
+.link-row__sub {
+  display: flex;
+  gap: 8px;
+  margin: 8px 0 0 42px;
+}
+
+.link-row__icon-input {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 680px) {
+  .link-row__main {
+    flex-wrap: wrap;
+  }
+
+  .link-row__name {
+    width: 100%;
+  }
+
+  .link-row__sub {
+    margin-left: 0;
+    flex-wrap: wrap;
+  }
+}

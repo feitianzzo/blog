@@ -333,6 +333,39 @@
     </a>`;
   }
 
+  /* ---------------- 个人链接 ---------------- */
+
+  function linksOf(settings) {
+    const conf = settings || {};
+    const list = (Array.isArray(conf.links) ? conf.links : [])
+      .filter((item) => item && item.name && item.url)
+      .slice(0, 12);
+    if (list.length) return list;
+    if (conf.githubUrl) return [{ name: 'Github', url: conf.githubUrl, icon: '' }];
+    return [];
+  }
+
+  function linkItemHTML(link) {
+    const icon = window.SiteIcons ? window.SiteIcons.html(link, 15) : '';
+    const external = /^https?:/i.test(link.url);
+    return `<a class="social-link" href="${esc(link.url)}"${external ? ' target="_blank" rel="noopener"' : ''} title="${esc(link.name)}">
+        <span class="social-link__icon">${icon}</span>
+        <span class="social-link__name">${esc(link.name)}</span>
+      </a>`;
+  }
+
+  function renderLinks(container, links) {
+    if (!container) return;
+    if (!links.length) {
+      container.innerHTML = '';
+      container.hidden = true;
+      return;
+    }
+    container.hidden = false;
+    container.classList.toggle('social-links--single', links.length === 1);
+    container.innerHTML = links.map(linkItemHTML).join('');
+  }
+
   /* ---------------- 首页：后台可配置文案 ---------------- */
 
   function applyHomeConf(conf) {
@@ -353,6 +386,8 @@
 
     const name = document.querySelector('[data-hero-name]');
     if (name) name.textContent = settings.authorName || 'FeiTian';
+
+    renderLinks(document.querySelector('[data-hero-links]'), linksOf(settings));
 
     const noticeCard = document.querySelector('[data-hero-notice-card]');
     const notice = document.querySelector('[data-hero-notice]');
@@ -499,15 +534,7 @@
       if (el) el.textContent = String(value);
     });
 
-    const github = document.querySelector('[data-profile-github]');
-    if (github) {
-      if (conf.githubUrl) {
-        github.href = conf.githubUrl;
-        github.hidden = false;
-      } else {
-        github.hidden = true;
-      }
-    }
+    renderLinks(document.querySelector('[data-profile-links]'), linksOf(conf));
 
     // 公告
     const announceCard = document.querySelector('[data-announce-card]');

@@ -70,7 +70,8 @@ BLOG_USER=me BLOG_PASS=your-password npm start
 - 正文支持 Markdown 编写 / 预览切换，实时字数统计，`Ctrl/Cmd + S` 保存
 - 评论管理：独立分页签，可查看文章、删除留言
 - 文章导入：列表页「导入」可选择多个 `.md` / `.markdown` / `.txt`，自动读取 front matter（title / category / tags），没有就取正文首个 `#` 标题或文件名，同名文章自动跳过，导入后直接发布
-- 站点设置：独立分页签，可配置开场画面开关、开场图片（支持上传）与开场两行文字、主页大标题 / 个性签名 / 个人介绍、昵称、头像地址、Github 链接与公告；保存后前台立即生效
+- 站点设置：独立分页签，可配置开场画面开关、开场图片（支持上传）与开场两行文字、主页大标题 / 个性签名 / 个人介绍、昵称、头像地址与公告；保存后前台立即生效
+- 个人链接：可增删多条（最多 12 个），图标按网址自动识别（GitHub / B 站 / YouTube / X / Telegram / 邮箱 / RSS），也可填 emoji 或上传图片；首页头像卡与文章页左栏同步展示
 - 删除二次确认；替换或删除文章时会清理无用的封面文件，删除文章时一并清理其评论
 
 ## 代码仓库
@@ -164,7 +165,7 @@ uploads/             上传的封面图
 | `authorBio` | 主页右栏个人介绍 + 文章页左栏简介 |
 | `authorName` / `authorAvatar` | 首页左栏与文章页左栏的头像、昵称 |
 | `announcement` | 首页左栏与文章页左栏的公告卡片 |
-| `githubUrl` | 文章页左栏 Github 按钮 |
+| `links` | 个人链接数组（`name` / `url` / `icon`），首页头像卡 + 文章页左栏 |
 
 新增字段时，`lib/store.js` 的 `DEFAULT_SETTINGS` / `TEXT_SETTINGS`、`server.js` 的 `TEXT_FIELDS`、`public/assets/admin.js` 的 `PROFILE_FIELDS` 与 `public/assets/site.js` 的渲染函数需要一一对应。
 

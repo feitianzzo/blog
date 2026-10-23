@@ -353,7 +353,6 @@
     authorName: '#authorNameInput',
     authorBio: '#authorBioInput',
     authorAvatar: '#authorAvatarInput',
-    githubUrl: '#githubUrlInput',
     announcement: '#announceInput',
   };
 
@@ -364,12 +363,73 @@
     if (img.getAttribute('src') !== src) img.src = src;
   }
 
+  /* ---------------- 个人链接 ---------------- */
+
+  const LINK_LIMIT = 12;
+  let pendingIconRow = null;
+
+  function linkIconHTML(link) {
+    const icon = String((link && link.icon) || '').trim();
+    const Icons = window.SiteIcons;
+    if (icon && Icons && Icons.isImage(icon)) return `<img src="${esc(icon)}" alt="" />`;
+    if (icon) return `<span class="link-emoji">${esc(icon)}</span>`;
+    return Icons ? Icons.svg(Icons.keyFor(link && link.url), 16) : '';
+  }
+
+  function linkRowHTML(link) {
+    const item = link || { name: '', url: '', icon: '' };
+    return `<div class="link-row">
+      <div class="link-row__main">
+        <span class="link-row__icon" data-link-icon>${linkIconHTML(item)}</span>
+        <input class="input link-row__name" data-link-name maxlength="24" placeholder="名称" value="${esc(item.name || '')}" />
+        <input class="input link-row__url" data-link-url maxlength="300" placeholder="https://..." value="${esc(item.url || '')}" />
+      </div>
+      <div class="link-row__sub">
+        <input class="input link-row__icon-input" data-link-iconinput maxlength="300" placeholder="图标：留空自动识别，可填 emoji 或图片地址" value="${esc(item.icon || '')}" />
+        <button class="btn btn--sm" type="button" data-link-upload>上传图标</button>
+        <button class="btn btn--sm btn--danger" type="button" data-link-remove>删除</button>
+      </div>
+    </div>`;
+  }
+
+  function renderLinkEditor(links) {
+    const host = $('[data-link-editor]');
+    if (!host) return;
+    const list = Array.isArray(links) ? links : [];
+    host.innerHTML = list.length
+      ? list.map(linkRowHTML).join('')
+      : '<p class="link-editor__empty">还没有链接，点下面的按钮添加。</p>';
+  }
+
+  function refreshRowIcon(row) {
+    if (!row) return;
+    const target = row.querySelector('[data-link-icon]');
+    if (!target) return;
+    target.innerHTML = linkIconHTML({
+      url: row.querySelector('[data-link-url]').value.trim(),
+      icon: row.querySelector('[data-link-iconinput]').value.trim(),
+    });
+  }
+
+  function collectLinks() {
+    const host = $('[data-link-editor]');
+    if (!host) return [];
+    return Array.from(host.querySelectorAll('.link-row'))
+      .map((row) => ({
+        name: row.querySelector('[data-link-name]').value.trim(),
+        url: row.querySelector('[data-link-url]').value.trim(),
+        icon: row.querySelector('[data-link-iconinput]').value.trim(),
+      }))
+      .filter((item) => item.name && item.url);
+  }
+
   function renderProfile(settings) {
     Object.entries(PROFILE_FIELDS).forEach(([key, sel]) => {
       const el = $(sel);
       if (el) el.value = settings[key] == null ? '' : settings[key];
     });
     updateIntroPreview();
+    renderLinkEditor(settings.links);
   }
 
   function collectProfile() {
@@ -406,7 +466,11 @@
       const { settings } = await api('/api/admin/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(collectProfile()),
+        body: JSON.stringify((() => {
+          const links = collectLinks();
+          const github = links.find((item) => /github\.com/i.test(item.url));
+          return { ...collectProfile(), links, githubUrl: github ? github.url : '' };
+        })()),
       });
       state.settings = settings;
       renderProfile(settings);
@@ -450,6 +514,75 @@
       btn.textContent = '上传新图';
       e.target.value = '';
     }
+  });
+
+  /* ---------------- 个人链接交互 ---------------- */
+
+  const linkEditorHost = $('[data-link-editor]');
+
+  if (linkEditorHost) {
+    linkEditorHost.addEventListener('input', (e) => {
+      const row = e.target.closest('.link-row');
+      if (!row) return;
+      if (e.target.matches('[data-link-url]') || e.target.matches('[data-link-iconinput]')) {
+        refreshRowIcon(row);
+      }
+    });
+
+    linkEditorHost.addEventListener('click', (e) => {
+      const row = e.target.closest('.link-row');
+      if (!row) return;
+      if (e.target.closest('[data-link-remove]')) {
+        row.remove();
+        if (!linkEditorHost.querySelector('.link-row')) renderLinkEditor([]);
+        return;
+      }
+      if (e.target.closest('[data-link-upload]')) {
+        pendingIconRow = row;
+        $('#linkIconFile').click();
+      }
+    });
+  }
+
+  $('#linkIconFile').addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = '';
+    const row = pendingIconRow;
+    if (!file || !row) return;
+
+    const btn = row.querySelector('[data-link-upload]');
+    const oldText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = '上传中…';
+    try {
+      const form = new FormData();
+      form.append('image', file);
+      const { url } = await api('/api/admin/uploads', { method: 'POST', body: form });
+      row.querySelector('[data-link-iconinput]').value = url;
+      refreshRowIcon(row);
+      toast('图标已上传，记得点「保存全部设置」');
+    } catch (err) {
+      if (err.status === 401) return showLogin();
+      toast(err.message, true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = oldText;
+      pendingIconRow = null;
+    }
+  });
+
+  $('#addLinkBtn').addEventListener('click', () => {
+    const host = $('[data-link-editor]');
+    if (!host) return;
+    if (host.querySelectorAll('.link-row').length >= LINK_LIMIT) {
+      toast(`最多 ${LINK_LIMIT} 个链接`, true);
+      return;
+    }
+    const empty = host.querySelector('.link-editor__empty');
+    if (empty) empty.remove();
+    host.insertAdjacentHTML('beforeend', linkRowHTML({ name: '', url: '', icon: '' }));
+    const nameInput = host.querySelector('.link-row:last-child [data-link-name]');
+    if (nameInput) nameInput.focus();
   });
 
   $('#introToggle').addEventListener('change', async (e) => {
