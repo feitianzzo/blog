@@ -456,9 +456,9 @@ button {
 
 /* Markdown 正文 */
 .prose {
-  font-size: 17px;
+  font-size: var(--read-size, 17px);
   line-height: 1.92;
-  color: #26262a;
+  color: var(--read-color, #26262a);
   overflow-wrap: break-word;
 }
 
@@ -729,7 +729,7 @@ button {
   }
 
   .prose {
-    font-size: 16.5px;
+    font-size: calc(var(--read-size, 17px) * 0.97);
     line-height: 1.85;
   }
 

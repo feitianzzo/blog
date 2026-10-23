@@ -712,7 +712,7 @@ body.reading-mode .article__inner {
 }
 
 body.reading-mode .prose {
-  font-size: 18.5px;
+  font-size: calc(var(--read-size, 17px) * 1.09);
   line-height: 2.05;
 }
 
@@ -912,7 +912,7 @@ body.reading-mode .post-rail {
   }
 
   body.reading-mode .prose {
-    font-size: 17px;
+    font-size: var(--read-size, 17px);
   }
 }
 

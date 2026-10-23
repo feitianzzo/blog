@@ -235,6 +235,8 @@ app.post('/api/admin/settings', requireAuth, (req, res) => {
   }
 
   const TEXT_FIELDS = {
+    readFontSize: 8,
+    readColor: 20,
     introImage: 300,
     introTitle: 80,
     introSub: 160,
@@ -378,6 +380,19 @@ app.post('/api/admin/posts/:id', requireAuth, handleUpload, (req, res) => {
 
   save();
   res.json({ post });
+});
+
+// 只切换发布状态，不用把正文再传一遍
+app.post('/api/admin/posts/:id/status', requireAuth, (req, res) => {
+  const post = db().posts.find((p) => p.id === req.params.id);
+  if (!post) return res.status(404).json({ error: '文章不存在' });
+
+  const status = req.body?.status === 'draft' ? 'draft' : 'published';
+  post.status = status;
+  post.updatedAt = Date.now();
+  if (status === 'published' && !post.publishedAt) post.publishedAt = post.updatedAt;
+  save();
+  res.json({ post: publicPost(post, false) });
 });
 
 app.delete('/api/admin/posts/:id', requireAuth, (req, res) => {

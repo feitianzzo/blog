@@ -12,8 +12,6 @@
       "'": '&#39;',
     }[c]));
 
-  let syncToTop = () => {};
-
   const state = {
     posts: [],
     comments: [],
@@ -104,7 +102,6 @@
     $('#editorView').hidden = true;
     state.editingId = null;
     state.dirty = false;
-    syncToTop();
   }
 
   /* ---------------- 密码显示切换 ---------------- */
@@ -220,6 +217,7 @@
       </div>
       <div class="post-row__actions">
         ${published ? `<a class="btn btn--sm" href="/p/${encodeURIComponent(post.id)}" target="_blank" rel="noopener">查看</a>` : ''}
+        <button class="btn btn--sm" data-action="toggle-status" type="button">${published ? '取消发布' : '发布'}</button>
         <button class="btn btn--sm" data-action="edit" type="button">编辑</button>
         <button class="btn btn--sm btn--danger" data-action="delete" type="button">删除</button>
       </div>
@@ -350,6 +348,8 @@
     introSub: '#introSubInput',
     heroTitle: '#heroTitleInput',
     signature: '#signatureInput',
+    readFontSize: '#readFontSizeInput',
+    readColor: '#readColorInput',
     authorName: '#authorNameInput',
     authorBio: '#authorBioInput',
     authorAvatar: '#authorAvatarInput',
@@ -361,6 +361,44 @@
     if (!img) return;
     const src = ($('#introImageInput').value || '').trim() || '/assets/intro.png';
     if (img.getAttribute('src') !== src) img.src = src;
+  }
+
+  /* ---------------- 正文排版预览 ---------------- */
+
+  function normalizeHex(value) {
+    const v = String(value || '').trim();
+    if (/^#[0-9a-f]{6}$/i.test(v)) return v.toLowerCase();
+    if (/^#[0-9a-f]{3}$/i.test(v)) return `#${v.slice(1).split('').map((c) => c + c).join('')}`.toLowerCase();
+    return '';
+  }
+
+  function syncTypoPreview() {
+    const preview = $('#typoPreview');
+    const sizeInput = $('#readFontSizeInput');
+    const colorInput = $('#readColorInput');
+    if (!preview || !sizeInput || !colorInput) return;
+
+    const size = Number(sizeInput.value);
+    const color = normalizeHex(colorInput.value);
+    preview.style.fontSize = size >= 12 && size <= 26 ? `${size}px` : '';
+    preview.style.color = color || '';
+
+    const picker = $('#readColorPicker');
+    if (picker && color) picker.value = color;
+  }
+
+  ['#readFontSizeInput', '#readColorInput'].forEach((sel) => {
+    const el = $(sel);
+    if (el) el.addEventListener('input', syncTypoPreview);
+  });
+
+  const colorPicker = $('#readColorPicker');
+  if (colorPicker) {
+    colorPicker.addEventListener('input', (e) => {
+      const input = $('#readColorInput');
+      if (input) input.value = e.target.value;
+      syncTypoPreview();
+    });
   }
 
   /* ---------------- 个人链接 ---------------- */
@@ -430,6 +468,7 @@
     });
     updateIntroPreview();
     renderLinkEditor(settings.links);
+    syncTypoPreview();
   }
 
   function collectProfile() {
@@ -647,6 +686,7 @@
     if (!row) return;
     if (action === 'edit') openEditor(row.dataset.id);
     if (action === 'delete') handleDelete(row.dataset.id);
+    if (action === 'toggle-status') handleToggleStatus(row.dataset.id);
   });
 
   $('#newPostBtn').addEventListener('click', () => openEditor(null));
@@ -683,17 +723,9 @@
       }
     }
 
+    // 没有 front matter 时，标题直接取文件名（去掉扩展名），不裁掉正文里的 # 标题
     if (!title) {
-      const head = text.replace(/^\s+/, '');
-      if (head.startsWith('# ')) {
-        const line = head.split('\n')[0];
-        title = line.replace(/^#\s+/, '').trim();
-        text = head.slice(line.length).replace(/^\n+/, '');
-      }
-    }
-
-    if (!title) {
-      title = filename.replace(/\.[^.]+$/, '').replace(/^[\d\-_.\s]+/, '').trim();
+      title = filename.replace(/\.[^.]+$/, '').trim();
     }
 
     return {
@@ -772,25 +804,6 @@
     e.target.value = '';
     if (files.length) importFiles(files);
   });
-
-  /* ---------------- 回到顶部 ---------------- */
-
-  function initToTop() {
-    const btn = $('#toTopBtn');
-    if (!btn) return;
-    btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
-    syncToTop = () => {
-      const inEditor = !$('#editorView').hidden;
-      btn.hidden = !inEditor;
-      btn.classList.toggle('is-idle', window.scrollY < 40);
-      btn.disabled = !inEditor;
-    };
-    window.addEventListener('scroll', syncToTop, { passive: true });
-    window.addEventListener('resize', syncToTop);
-    syncToTop();
-  }
-
-  initToTop();
 
   /* ---------------- 编辑器 ---------------- */
 
@@ -882,7 +895,6 @@
     syncSaveButton();
     $('#listView').hidden = true;
     $('#editorView').hidden = false;
-    syncToTop();
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setTimeout(() => $('#titleInput').focus(), 80);
   }
@@ -1034,6 +1046,24 @@
   }
 
   $('#backBtn').addEventListener('click', goBack);
+
+  async function handleToggleStatus(id) {
+    const post = state.posts.find((item) => item.id === id);
+    if (!post) return;
+    const next = post.status === 'published' ? 'draft' : 'published';
+    try {
+      await api(`/api/admin/posts/${encodeURIComponent(id)}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: next }),
+      });
+      toast(next === 'published' ? '已发布，前台立即可以看到' : '已取消发布，前台不再显示');
+      loadPosts();
+    } catch (err) {
+      if (err.status === 401) return showLogin();
+      toast(err.message, true);
+    }
+  }
 
   async function handleDelete(id) {
     const post = state.posts.find((p) => p.id === id);
