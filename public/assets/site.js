@@ -27,6 +27,7 @@
     return {
       full: `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日`,
       short: `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}`,
+      dash: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
       time: `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`,
     };
   }
@@ -289,48 +290,55 @@
   function skeleton(n) {
     return Array.from({ length: n })
       .map(
-        () => `<div class="skeleton">
-          <div class="skeleton__cover"></div>
-          <div class="skeleton__body">
-            <div class="skeleton__line" style="width:28%"></div>
-            <div class="skeleton__line" style="width:82%;height:16px"></div>
-            <div class="skeleton__line" style="width:96%"></div>
-            <div class="skeleton__line" style="width:64%;margin-bottom:0"></div>
-          </div>
+        () => `<div class="post-item post-item--skeleton">
+          <div class="skeleton__line" style="width:46%;height:24px"></div>
+          <div class="skeleton__line" style="width:34%;margin-top:16px"></div>
+          <div class="skeleton__line" style="width:86%;margin-top:16px;margin-bottom:0"></div>
         </div>`
       )
       .join('');
   }
 
-  function cardHTML(post, index) {
-    const date = fmtDate(post.publishedAt || post.createdAt).short;
-    const initial = esc((post.title || '文').trim().slice(0, 1));
-    const cover = post.cover
-      ? `<div class="card__cover"><img src="${esc(post.cover)}" alt="${esc(post.title)}" loading="${index < 2 ? 'eager' : 'lazy'}" /></div>`
-      : `<div class="card__cover card__cover--blank"><span>${initial}</span></div>`;
-    const cat = post.category
-      ? `<span class="card__cat">${esc(post.category)}</span>`
-      : `<span class="card__cat card__cat--none">未分类</span>`;
-    const words = post.words ? `${num(post.words)} 字` : '';
-    const comments = post.commentCount ? `${num(post.commentCount)} 评论` : '';
+  const META_ICON = {
+    calendar:
+      '<svg class="post-item__icon" width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><rect x="3" y="4.6" width="14" height="12" rx="2.2"/><path d="M3 8.2h14M6.8 2.8v3M13.2 2.8v3" stroke-linecap="round"/></svg>',
+    clock:
+      '<svg class="post-item__icon" width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="10" cy="10" r="7.2"/><path d="M10 6.2v4.2l2.8 1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+    folder:
+      '<svg class="post-item__icon" width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M2.8 6.2a1.5 1.5 0 0 1 1.5-1.5h3l1.6 1.9h5.3a1.5 1.5 0 0 1 1.5 1.5v6.4a1.5 1.5 0 0 1-1.5 1.5H4.3a1.5 1.5 0 0 1-1.5-1.5z" stroke-linejoin="round"/></svg>',
+    tag:
+      '<svg class="post-item__icon" width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="M3.2 9.4V4.2a1 1 0 0 1 1-1h5.2l7.6 7.6a1.5 1.5 0 0 1 0 2.1l-5.1 5.1a1.5 1.5 0 0 1-2.1 0z" stroke-linejoin="round"/><circle cx="6.6" cy="6.6" r="1.1"/></svg>',
+  };
+
+  // 首页 / 分类标签页的文章条目：标题 + 信息行 + 摘要，单列排列，不显示缩略图
+  function postItemHTML(post) {
+    const published = fmtDate(post.publishedAt || post.createdAt).dash;
+    const updated = fmtDate(post.updatedAt || post.publishedAt || post.createdAt).dash;
     const tags = (post.tags || []).slice(0, 4);
-    return `<a class="card" href="${postHref(post.id)}">
-      ${cover}
-      <div class="card__body">
-        <div class="card__top">${cat}<span class="card__date">${date}</span></div>
-        <h3 class="card__title">${esc(post.title)}</h3>
-        <p class="card__excerpt">${esc(post.excerpt || '')}</p>
-        ${tags.length ? `<div class="card__tags">${tags.map((t) => `<span class="tag tag--sm">#${esc(t)}</span>`).join('')}</div>` : ''}
-        <div class="card__foot">
-          <span class="card__more">阅读全文
-            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
-              <path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </span>
-          <span class="card__stats">${[words, comments].filter(Boolean).join(' · ')}</span>
-        </div>
-      </div>
-    </a>`;
+
+    const meta = [
+      `<span class="post-item__meta-item">${META_ICON.calendar}发表于 ${published}</span>`,
+      `<span class="post-item__sep">|</span>`,
+      `<span class="post-item__meta-item">${META_ICON.clock}更新于 ${updated}</span>`,
+      post.category
+        ? `<span class="post-item__sep">|</span><span class="post-item__meta-item">${META_ICON.folder}${esc(post.category)}</span>`
+        : '',
+      tags.length
+        ? `<span class="post-item__sep">|</span><span class="post-item__tags">${tags
+            .map((t) => `<span class="post-item__tag">${META_ICON.tag}${esc(t)}</span>`)
+            .join('<span class="post-item__dot">·</span>')}</span>`
+        : '',
+    ]
+      .filter(Boolean)
+      .join('');
+
+    return `<article class="post-item">
+      <a class="post-item__link" href="${postHref(post.id)}">
+        <h3 class="post-item__title">${esc(post.title)}</h3>
+        <div class="post-item__meta">${meta}</div>
+        ${post.excerpt ? `<p class="post-item__excerpt">${esc(post.excerpt)}</p>` : ''}
+      </a>
+    </article>`;
   }
 
   /* ---------------- 个人链接 ---------------- */
@@ -444,7 +452,6 @@
       }
 
       if (!posts.length) {
-        list.style.gridTemplateColumns = '1fr';
         list.innerHTML = `<div class="empty">
           <h3>还没有文章</h3>
           <p>登录后台发布第一篇，它会立刻出现在这里。</p>
@@ -453,9 +460,8 @@
       }
 
       if (countLabel) countLabel.textContent = `${posts.length} 篇 · 全部文章`;
-      list.innerHTML = posts.map(cardHTML).join('');
+      list.innerHTML = posts.map(postItemHTML).join('');
     } catch (err) {
-      list.style.gridTemplateColumns = '1fr';
       list.innerHTML = `<div class="empty"><h3>加载失败</h3><p>${esc(err.message)}</p></div>`;
     }
   }
@@ -1080,7 +1086,7 @@
     fmtDate,
     readingTime,
     getJSON,
-    cardHTML,
+    postItemHTML,
     categoryHref,
     tagHref,
     postHref,

@@ -59,7 +59,7 @@
           return;
         }
 
-        list.innerHTML = matched.map(UI.cardHTML).join('');
+        list.innerHTML = matched.map(UI.postItemHTML).join('');
       })
       .catch((err) => {
         list.innerHTML = `<div class="empty"><h3>加载失败</h3><p>${UI.esc(err.message)}</p></div>`;

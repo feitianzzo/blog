@@ -18,10 +18,6 @@
     settings: null,
     view: 'posts',
     editingId: null,
-    coverFile: null,
-    coverURL: null,
-    existingCover: null,
-    removeCover: false,
     dirty: false,
   };
 
@@ -189,9 +185,6 @@
 
   function rowHTML(post) {
     const published = post.status === 'published';
-    const cover = post.cover
-      ? `<img src="${esc(post.cover)}" alt="" loading="lazy" />`
-      : `<span>${esc((post.title || '文').slice(0, 1))}</span>`;
     const dateLabel = published
       ? `发布于 ${fmt(post.publishedAt || post.createdAt)}`
       : `创建于 ${fmt(post.createdAt)}`;
@@ -204,7 +197,6 @@
       .join(' · ');
     return `<div class="post-row" data-id="${esc(post.id)}">
       <div class="post-row__main">
-        <div class="post-row__cover">${cover}</div>
         <div class="post-row__text">
           <h3 class="post-row__title">${esc(post.title)}</h3>
           <div class="post-row__meta">
@@ -766,45 +758,6 @@
 
   /* ---------------- 编辑器 ---------------- */
 
-  const COVER_PLACEHOLDER = `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
-      <rect x="3" y="4" width="18" height="16" rx="2.5" />
-      <circle cx="8.5" cy="9.5" r="1.6" />
-      <path d="m4 17 4.5-4.5 3.5 3.5 3-3L20 17" stroke-linecap="round" stroke-linejoin="round" />
-    </svg><span>点击或拖拽上传</span>`;
-
-  function renderCover() {
-    const drop = $('#coverDrop');
-    let src = null;
-    if (state.coverFile) src = state.coverURL;
-    else if (state.existingCover && !state.removeCover) src = state.existingCover;
-
-    if (src) {
-      drop.classList.add('has-image');
-      drop.innerHTML = `<img src="${esc(src)}" alt="封面预览" />`;
-    } else {
-      drop.classList.remove('has-image');
-      drop.innerHTML = COVER_PLACEHOLDER;
-    }
-    $('#removeCoverBtn').hidden = !src;
-    $('#pickCoverBtn').textContent = src ? '更换图片' : '选择图片';
-  }
-
-  function setCoverFile(file) {
-    if (!file) return;
-    if (!/^image\/(jpeg|png|webp|gif)$/.test(file.type)) {
-      return toast('仅支持 JPG / PNG / WebP / GIF 图片', true);
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      return toast('图片不能超过 5MB', true);
-    }
-    if (state.coverURL) URL.revokeObjectURL(state.coverURL);
-    state.coverFile = file;
-    state.coverURL = URL.createObjectURL(file);
-    state.removeCover = false;
-    state.dirty = true;
-    renderCover();
-  }
-
   function syncSaveButton() {
     const status = $('#statusSelect').value;
     const btn = $('#saveBtn');
@@ -813,11 +766,6 @@
 
   async function openEditor(id) {
     state.editingId = id;
-    state.coverFile = null;
-    if (state.coverURL) URL.revokeObjectURL(state.coverURL);
-    state.coverURL = null;
-    state.existingCover = null;
-    state.removeCover = false;
     state.dirty = false;
 
     $('#titleInput').value = '';
@@ -838,7 +786,6 @@
         $('#categoryInput').value = post.category || '';
         $('#tagsInput').value = Array.isArray(post.tags) ? post.tags.join(', ') : '';
         $('#statusSelect').value = post.status === 'draft' ? 'draft' : 'published';
-        state.existingCover = post.cover || null;
         $('#postTimestamps').innerHTML = `创建于 ${fmt(post.createdAt, true)}<br />最后更新 ${fmt(post.updatedAt, true)}`;
       } catch (err) {
         if (err.status === 401) return showLogin();
@@ -850,7 +797,6 @@
 
     updateWordCount();
 
-    renderCover();
     syncSaveButton();
     $('#listView').hidden = true;
     $('#editorView').hidden = false;
@@ -885,49 +831,6 @@
     });
   });
 
-  /* 封面交互 */
-  $('#pickCoverBtn').addEventListener('click', () => $('#coverInput').click());
-  $('#coverDrop').addEventListener('click', () => $('#coverInput').click());
-  $('#coverDrop').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      $('#coverInput').click();
-    }
-  });
-  $('#coverInput').addEventListener('change', (e) => {
-    setCoverFile(e.target.files && e.target.files[0]);
-    e.target.value = '';
-  });
-
-  ['dragenter', 'dragover'].forEach((evt) =>
-    $('#coverDrop').addEventListener(evt, (e) => {
-      e.preventDefault();
-      $('#coverDrop').classList.add('dragover');
-    })
-  );
-  ['dragleave', 'drop'].forEach((evt) =>
-    $('#coverDrop').addEventListener(evt, (e) => {
-      e.preventDefault();
-      $('#coverDrop').classList.remove('dragover');
-    })
-  );
-  $('#coverDrop').addEventListener('drop', (e) => {
-    const file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
-    setCoverFile(file);
-  });
-
-  $('#removeCoverBtn').addEventListener('click', () => {
-    if (state.coverFile) {
-      if (state.coverURL) URL.revokeObjectURL(state.coverURL);
-      state.coverFile = null;
-      state.coverURL = null;
-    } else {
-      state.removeCover = true;
-    }
-    state.dirty = true;
-    renderCover();
-  });
-
   /* ---------------- 保存 ---------------- */
 
   async function savePost() {
@@ -957,8 +860,6 @@
     fd.append('status', status);
     fd.append('category', $('#categoryInput').value.trim());
     fd.append('tags', $('#tagsInput').value.trim());
-    if (state.coverFile) fd.append('cover', state.coverFile);
-    if (state.removeCover) fd.append('removeCover', '1');
 
     const url = state.editingId
       ? `/api/admin/posts/${encodeURIComponent(state.editingId)}`
