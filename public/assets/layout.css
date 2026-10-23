@@ -636,6 +636,29 @@ body.reading-mode .post-shell {
   padding-right: 58px;
 }
 
+/* 宽屏阅读模式：正文真正居中，目录放到左侧留白里（两列 1fr 夹住 700px 正文） */
+@media (min-width: 1200px) {
+  body.reading-mode .post-shell {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 700px) minmax(0, 1fr);
+    grid-template-areas: 'left main right';
+    max-width: none;
+    padding: 0 28px;
+    gap: 0;
+  }
+
+  body.reading-mode .post-side {
+    grid-area: left;
+    justify-self: end;
+    align-self: start;
+    width: min(340px, 100%);
+    padding: 46px 26px 0 0;
+  }
+
+  body.reading-mode .post-shell .article {
+    grid-area: main;
+  }
+}
+
 /* 阅读模式下目录放大放长，尽量把整篇大纲都摊开 */
 body.reading-mode .side-card--toc .side-card__head {
   padding: 17px 18px 11px;
