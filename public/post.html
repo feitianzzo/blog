@@ -6,19 +6,30 @@
     <title>文章 · 半页</title>
     <meta name="theme-color" content="#fbfaf7" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231b1b1d'/%3E%3Cpath d='M11 9h10M11 15h10M11 21h6' stroke='%23fbfaf7' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E" />
+    <script>
+      // 尽早应用日夜模式，避免刷新时闪白
+      (function () {
+        try {
+          var saved = localStorage.getItem('banye_theme');
+          var dark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+        } catch (e) {}
+      })();
+    </script>
     <link rel="stylesheet" href="/assets/style.css" />
     <link rel="stylesheet" href="/assets/modules.css" />
+    <link rel="stylesheet" href="/assets/layout.css" />
   </head>
-  <body>
+  <body class="post-page">
     <header class="site-header">
       <div class="wrap">
         <a class="brand" href="/">
           <span class="brand__dot"></span>半页<span class="brand__sub">Ban Ye · Notes</span>
         </a>
         <nav class="site-nav">
-          <a href="/">文章</a>
-          <a href="/#categories">分类</a>
-          <a href="/#tags">标签</a>
+          <a href="/?intro=0">主页</a>
+          <a href="/categories">分类</a>
+          <a href="/tags">标签</a>
           <button class="nav-search" type="button" data-search-open aria-label="搜索文章">
             <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
               <circle cx="8.6" cy="8.6" r="5.4" />
@@ -32,15 +43,113 @@
       </div>
     </header>
 
-    <main class="article">
-      <div class="article__inner" data-article></div>
-      <div class="article__inner" data-comments></div>
-    </main>
+    <div class="post-shell">
+      <!-- ============ 左栏 ============ -->
+      <aside class="post-side" aria-label="文章信息">
+        <section class="side-card profile">
+          <div class="profile__avatar">
+            <img data-profile-avatar src="/assets/avatar.svg" alt="博主头像" width="96" height="96" />
+          </div>
+          <h2 class="profile__name" data-profile-name>FeiTian</h2>
+          <p class="profile__bio" data-profile-bio>喜欢折腾各种电子产品。</p>
+          <div class="profile__stats">
+            <div><strong data-stat-posts>—</strong><span>文章</span></div>
+            <div><strong data-stat-tags>—</strong><span>标签</span></div>
+            <div><strong data-stat-cats>—</strong><span>分类</span></div>
+          </div>
+          <a class="profile__github" data-profile-github href="https://github.com/feitianzzo/blog" target="_blank" rel="noopener">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M12 1.8a10.2 10.2 0 0 0-3.23 19.9c.51.1.7-.22.7-.44v-1.7c-2.84.62-3.44-1.2-3.44-1.2-.46-1.18-1.13-1.5-1.13-1.5-.93-.63.07-.62.07-.62 1.02.08 1.56 1.06 1.56 1.06.9 1.55 2.36 1.1 2.94.85.09-.66.35-1.1.64-1.36-2.27-.26-4.65-1.14-4.65-5.06 0-1.12.4-2.03 1.05-2.75-.11-.26-.46-1.3.1-2.7 0 0 .86-.28 2.82 1.05a9.7 9.7 0 0 1 5.14 0c1.96-1.33 2.82-1.05 2.82-1.05.56 1.4.21 2.44.1 2.7.65.72 1.05 1.63 1.05 2.75 0 3.93-2.39 4.8-4.67 5.05.36.32.69.94.69 1.9v2.8c0 .23.18.55.7.44A10.2 10.2 0 0 0 12 1.8Z" />
+            </svg>
+            Github
+          </a>
+        </section>
+
+        <section class="side-card" data-announce-card>
+          <div class="side-card__head">
+            <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+              <path d="M3.5 8.5v3l2.4.4 1.6 4 2 .3-1.3-4h1.6L13 14V6L5.9 8.5z" stroke-linejoin="round" />
+              <path d="M15.5 8.2v3.6" stroke-linecap="round" />
+            </svg>
+            <h2>公告</h2>
+          </div>
+          <p class="announce__text" data-announce>—</p>
+        </section>
+
+        <section class="side-card">
+          <div class="side-card__head">
+            <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+              <path d="M3.5 5h13M3.5 10h13M3.5 15h8" stroke-linecap="round" />
+            </svg>
+            <h2>目录</h2>
+            <span class="side-card__count" data-toc-count>0</span>
+          </div>
+          <nav class="toc" data-toc aria-label="文章目录"></nav>
+        </section>
+
+        <section class="side-card" data-related-card hidden>
+          <div class="side-card__head">
+            <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+              <path d="M2.8 6.2a1.5 1.5 0 0 1 1.5-1.5h3l1.6 1.9h5.3a1.5 1.5 0 0 1 1.5 1.5v6.4a1.5 1.5 0 0 1-1.5 1.5H4.3a1.5 1.5 0 0 1-1.5-1.5z" stroke-linejoin="round" />
+            </svg>
+            <h2 data-related-title>同分类文章</h2>
+          </div>
+          <ul class="mini-list" data-related></ul>
+        </section>
+
+        <section class="side-card">
+          <div class="side-card__head">
+            <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+              <circle cx="10" cy="10" r="7.2" />
+              <path d="M10 6v4.4l2.8 1.7" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <h2>最新文章</h2>
+          </div>
+          <ul class="mini-list" data-latest></ul>
+        </section>
+      </aside>
+
+      <!-- ============ 正文 ============ -->
+      <main class="article">
+        <div class="article__inner" data-article></div>
+        <div class="article__inner" data-comments></div>
+      </main>
+
+      <!-- ============ 右栏功能栏 ============ -->
+      <aside class="post-rail" data-rail aria-label="阅读工具">
+        <button class="rail__btn" type="button" data-rail-action="reading" aria-pressed="false" data-tip="阅读模式" aria-label="阅读模式">
+          <svg class="rail__icon rail__icon--book" width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <path d="M10 5.2C8.6 3.9 6.4 3.4 3.2 3.5v11.3c3.2-.1 5.4.4 6.8 1.7 1.4-1.3 3.6-1.8 6.8-1.7V3.5c-3.2-.1-5.4.4-6.8 1.7Z" stroke-linejoin="round" />
+            <path d="M10 5.2v11.3" />
+          </svg>
+        </button>
+        <button class="rail__btn" type="button" data-rail-action="theme" aria-pressed="false" data-tip="夜间模式" aria-label="切换日夜模式">
+          <svg class="rail__icon rail__icon--moon" width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <path d="M16 12.3A6.6 6.6 0 0 1 7.7 4a6.8 6.8 0 1 0 8.3 8.3Z" stroke-linejoin="round" />
+          </svg>
+          <svg class="rail__icon rail__icon--sun" width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <circle cx="10" cy="10" r="3.6" />
+            <path d="M10 2.4v1.7M10 15.9v1.7M17.6 10h-1.7M4.1 10H2.4M15.4 4.6l-1.2 1.2M5.8 14.2l-1.2 1.2M15.4 15.4l-1.2-1.2M5.8 5.8 4.6 4.6" stroke-linecap="round" />
+          </svg>
+        </button>
+        <button class="rail__btn" type="button" data-rail-action="comments" data-tip="前往评论" aria-label="前往评论">
+          <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <path d="M3.2 5.2a1.6 1.6 0 0 1 1.6-1.6h10.4a1.6 1.6 0 0 1 1.6 1.6v7a1.6 1.6 0 0 1-1.6 1.6H8.4l-3.6 3v-3H4.8a1.6 1.6 0 0 1-1.6-1.6Z" stroke-linejoin="round" />
+            <path d="M6.6 8.6h6.8" stroke-linecap="round" />
+          </svg>
+        </button>
+        <button class="rail__btn" type="button" data-rail-action="top" data-tip="回到顶部" aria-label="回到顶部">
+          <svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <path d="M10 16V4.6M4.8 9.4 10 4.2l5.2 5.2" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+      </aside>
+    </div>
 
     <footer class="site-footer">
       <div class="wrap">
         <span>© <span id="year"></span> 半页 · 用文字留一点痕迹</span>
-        <a href="/">回到首页</a>
+        <a href="/?intro=0">回到首页</a>
       </div>
     </footer>
 

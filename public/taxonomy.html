@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>分类 · 半页</title>
+    <meta name="theme-color" content="#fbfaf7" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231b1b1d'/%3E%3Cpath d='M11 9h10M11 15h10M11 21h6' stroke='%23fbfaf7' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E" />
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('banye_theme');
+          var dark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="stylesheet" href="/assets/style.css" />
+    <link rel="stylesheet" href="/assets/modules.css" />
+    <link rel="stylesheet" href="/assets/layout.css" />
+  </head>
+  <body class="taxonomy-page">
+    <header class="site-header">
+      <div class="wrap">
+        <a class="brand" href="/">
+          <span class="brand__dot"></span>半页<span class="brand__sub">Ban Ye · Notes</span>
+        </a>
+        <nav class="site-nav">
+          <a href="/?intro=0">主页</a>
+          <a href="/categories">分类</a>
+          <a href="/tags">标签</a>
+          <button class="nav-search" type="button" data-search-open aria-label="搜索文章">
+            <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+              <circle cx="8.6" cy="8.6" r="5.4" />
+              <path d="m12.7 12.7 3.6 3.6" stroke-linecap="round" />
+            </svg>
+            <span>搜索</span>
+            <kbd>/</kbd>
+          </button>
+          <a class="nav-cta" href="/admin">写文章</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section class="taxonomy-hero">
+        <a class="backlink" href="/?intro=0" data-back>
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+            <path d="M13 8H4M7.5 4.5 4 8l3.5 3.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          <span data-back-text>返回文章列表</span>
+        </a>
+        <p class="topic-eyebrow" data-tax-eyebrow>Category</p>
+        <h1 data-tax-title>加载中…</h1>
+        <div class="taxonomy-meta" data-tax-meta></div>
+        <div class="taxonomy-siblings" data-tax-siblings></div>
+      </section>
+
+      <div class="posts-grid" data-tax-list></div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <span>© <span id="year"></span> 半页 · 用文字留一点痕迹</span>
+        <a href="/?intro=0">回到首页</a>
+      </div>
+    </footer>
+
+    <script>
+      document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
+    <script src="/assets/md.js"></script>
+    <script src="/assets/site.js"></script>
+    <script src="/assets/taxonomy.js"></script>
+  </body>
+</html>

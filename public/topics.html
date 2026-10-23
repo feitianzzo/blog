@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>分类与标签 · 半页</title>
+    <meta name="description" content="按分类与标签浏览半页博客的全部文章。" />
+    <meta name="theme-color" content="#fbfaf7" />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231b1b1d'/%3E%3Cpath d='M11 9h10M11 15h10M11 21h6' stroke='%23fbfaf7' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E" />
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('banye_theme');
+          var dark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+        } catch (e) {}
+      })();
+    </script>
+    <link rel="stylesheet" href="/assets/style.css" />
+    <link rel="stylesheet" href="/assets/modules.css" />
+    <link rel="stylesheet" href="/assets/layout.css" />
+  </head>
+  <body class="topic-page">
+    <header class="site-header">
+      <div class="wrap">
+        <a class="brand" href="/">
+          <span class="brand__dot"></span>半页<span class="brand__sub">Ban Ye · Notes</span>
+        </a>
+        <nav class="site-nav">
+          <a href="/?intro=0">主页</a>
+          <a href="/categories">分类</a>
+          <a href="/tags">标签</a>
+          <button class="nav-search" type="button" data-search-open aria-label="搜索文章">
+            <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+              <circle cx="8.6" cy="8.6" r="5.4" />
+              <path d="m12.7 12.7 3.6 3.6" stroke-linecap="round" />
+            </svg>
+            <span>搜索</span>
+            <kbd>/</kbd>
+          </button>
+          <a class="nav-cta" href="/admin">写文章</a>
+        </nav>
+      </div>
+    </header>
+
+    <main>
+      <section class="topic-hero">
+        <div class="wrap">
+          <p class="topic-eyebrow" data-topic-eyebrow>Category</p>
+          <h1 data-topic-title>分类</h1>
+          <p data-topic-desc>按主题把文章归到一起，点进去可以看到该分类下的全部文章。</p>
+          <div class="topic-tabs">
+            <a class="topic-tab" href="/categories" data-tab="categories">
+              分类 <em data-count-categories>0</em>
+            </a>
+            <a class="topic-tab" href="/tags" data-tab="tags">
+              标签 <em data-count-tags>0</em>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section class="wrap">
+        <div class="topic-grid" data-topic-grid></div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <span>© <span id="year"></span> 半页 · 用文字留一点痕迹</span>
+        <a href="/?intro=0">回到首页</a>
+      </div>
+    </footer>
+
+    <script>
+      document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
+    <script src="/assets/md.js"></script>
+    <script src="/assets/site.js"></script>
+    <script src="/assets/topics.js"></script>
+  </body>
+</html>

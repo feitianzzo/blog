@@ -98,6 +98,7 @@
           </div>
 
           <div id="settingsPanel" hidden>
+            <!-- 开场画面 -->
             <div class="settings-card">
               <div class="setting">
                 <div class="setting__main">
@@ -106,10 +107,10 @@
                     <span class="setting__state" id="introState">已开启</span>
                   </h2>
                   <p class="setting__desc">
-                    桌面端第一次进入首页时，先显示一张全屏图片，点击任意处后上滑进入主页。移动端、以及系统开启「减少动态效果」时始终直接进入首页。
+                    桌面端每次进入首页都会先显示一张全屏图片，点击任意处后上滑进入主页。移动端、以及系统开启「减少动态效果」时直接进入首页。
                   </p>
                   <p class="setting__note">
-                    每位访客只会在第一次访问时看到
+                    导航栏的「主页」会跳过开场
                     <a href="/?intro=1" target="_blank" rel="noopener">预览效果</a>
                   </p>
                 </div>
@@ -118,6 +119,98 @@
                   <span class="switch__track"><span class="switch__thumb"></span></span>
                 </label>
               </div>
+
+              <div class="setting setting--stack">
+                <div class="setting__main">
+                  <h2 class="setting__title">开场图片与文字</h2>
+                  <p class="setting__desc">开场画面上显示的大图与两行文案，保存后立即生效。</p>
+                  <div class="intro-image-row">
+                    <div class="intro-image-preview">
+                      <img id="introImagePreview" alt="开场图预览" />
+                    </div>
+                    <div class="intro-image-actions">
+                      <button class="btn btn--sm" id="introImagePick" type="button">上传新图</button>
+                      <input type="file" id="introImageFile" accept="image/jpeg,image/png,image/webp,image/gif" hidden />
+                      <p class="side-note">建议竖向大图，不超过 5MB，支持 JPG / PNG / WebP / GIF。</p>
+                    </div>
+                  </div>
+                  <div class="settings-fields">
+                    <label class="field field--full">
+                      <span class="field__label">开场图片地址</span>
+                      <input class="input" id="introImageInput" maxlength="300" placeholder="/assets/intro.png" />
+                    </label>
+                    <label class="field field--full">
+                      <span class="field__label">开场标题（换行即分行）</span>
+                      <textarea class="input input-area" id="introTitleInput" rows="2" maxlength="80"></textarea>
+                    </label>
+                    <label class="field field--full">
+                      <span class="field__label">开场副标题</span>
+                      <textarea class="input input-area" id="introSubInput" rows="2" maxlength="160"></textarea>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 主页文字 -->
+            <div class="settings-card settings-card--form">
+              <div class="setting setting--form">
+                <div class="setting__main">
+                  <h2 class="setting__title">主页文字</h2>
+                  <p class="setting__desc">
+                    进入主页后右栏显示的大标题、个性签名与个人介绍；左栏头像与公告在下方「站长资料」里设置。
+                  </p>
+                  <div class="settings-fields">
+                    <label class="field field--full">
+                      <span class="field__label">大标题</span>
+                      <input class="input" id="heroTitleInput" maxlength="100" placeholder="把想清楚的事，写下来。" />
+                    </label>
+                    <label class="field field--full">
+                      <span class="field__label">个性签名</span>
+                      <input class="input" id="signatureInput" maxlength="80" placeholder="写下来，才算真的想清楚。" />
+                    </label>
+                    <label class="field field--full">
+                      <span class="field__label">个人介绍</span>
+                      <textarea class="input input-area" id="authorBioInput" rows="3" maxlength="160"></textarea>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 站长资料 -->
+            <div class="settings-card settings-card--form">
+              <div class="setting setting--form">
+                <div class="setting__main">
+                  <h2 class="setting__title">站长资料</h2>
+                  <p class="setting__desc">
+                    头像与昵称显示在首页左栏和文章页左侧栏，公告会出现在这两处的「公告」卡片里。
+                  </p>
+                  <div class="settings-fields">
+                    <label class="field">
+                      <span class="field__label">昵称</span>
+                      <input class="input" id="authorNameInput" maxlength="24" placeholder="FeiTian" />
+                    </label>
+                    <label class="field">
+                      <span class="field__label">Github 链接</span>
+                      <input class="input" id="githubUrlInput" maxlength="300" placeholder="https://github.com/yourname" />
+                    </label>
+                    <label class="field field--full">
+                      <span class="field__label">头像地址</span>
+                      <input class="input" id="authorAvatarInput" maxlength="300" placeholder="/assets/avatar.svg" />
+                    </label>
+                    <label class="field field--full">
+                      <span class="field__label">公告</span>
+                      <textarea class="input input-area" id="announceInput" rows="2" maxlength="200"></textarea>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="settings-actions">
+              <button class="btn btn--primary setting__save" id="saveProfileBtn" type="button">保存全部设置</button>
+              <span class="setting__savehint" id="saveHint">修改后点这里，前台立即同步</span>
             </div>
           </div>
         </section>

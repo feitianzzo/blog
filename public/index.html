@@ -7,18 +7,29 @@
     <meta name="description" content="一个安静的写作角落，记录技术、阅读与生活里那些值得留下的片段。" />
     <meta name="theme-color" content="#fbfaf7" />
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231b1b1d'/%3E%3Cpath d='M11 9h10M11 15h10M11 21h6' stroke='%23fbfaf7' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E" />
+    <script>
+      // 尽早应用日夜模式，避免刷新时闪白
+      (function () {
+        try {
+          var saved = localStorage.getItem('banye_theme');
+          var dark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (dark) document.documentElement.setAttribute('data-theme', 'dark');
+        } catch (e) {}
+      })();
+    </script>
     <link rel="stylesheet" href="/assets/style.css" />
     <link rel="stylesheet" href="/assets/modules.css" />
+    <link rel="stylesheet" href="/assets/layout.css" />
   </head>
   <body class="home">
-    <!-- ============ 开场画面（仅桌面端首次访问） ============ -->
+    <!-- ============ 开场画面（桌面端每次进入首页都会显示） ============ -->
     <div class="intro" id="intro" hidden>
-      <div class="intro__bg" role="img" aria-label="暖色光晕背景"></div>
+      <div class="intro__bg" data-intro-bg role="img" aria-label="开场背景"></div>
       <div class="intro__veil"></div>
       <div class="intro__body">
         <p class="intro__eyebrow">Ban Ye · Notes</p>
-        <h1 class="intro__title">把想清楚的事，<br />写下来。</h1>
-        <p class="intro__sub">一个安静的写作角落，记录技术与生活里值得留下的片段。</p>
+        <h1 class="intro__title" data-intro-title>把想清楚的事，<br />写下来。</h1>
+        <p class="intro__sub" data-intro-sub>一个安静的写作角落，记录技术与生活里值得留下的片段。</p>
         <span class="intro__hint">
           点击任意处进入
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
@@ -36,14 +47,10 @@
         var force = new URLSearchParams(location.search).get('intro');
         var wide = window.matchMedia('(min-width: 861px)').matches;
         var calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        var seen = false;
-        try {
-          seen = localStorage.getItem('banye_intro_seen') === '1';
-        } catch (e) {}
 
-        // ?intro=0 强制关闭；?intro=1 强制预览（绕过开关与已看记录）
+        // ?intro=0 跳过开场（导航「主页」走这条路）；?intro=1 强制预览
         if (force === '0') return;
-        if (force !== '1' && (!wide || calm || seen)) return;
+        if (force !== '1' && (!wide || calm)) return;
 
         function show() {
           el.hidden = false;
@@ -74,6 +81,7 @@
             return r.json();
           })
           .then(function (data) {
+            window.__siteSettings = (data && data.settings) || {};
             settle(!(data && data.settings && data.settings.introEnabled === false));
           })
           .catch(function () {
@@ -88,9 +96,9 @@
           <span class="brand__dot"></span>半页<span class="brand__sub">Ban Ye · Notes</span>
         </a>
         <nav class="site-nav">
-          <a href="/">文章</a>
-          <a href="#categories">分类</a>
-          <a href="#tags">标签</a>
+          <a href="/?intro=0">主页</a>
+          <a href="/categories">分类</a>
+          <a href="/tags">标签</a>
           <button class="nav-search" type="button" data-search-open aria-label="搜索文章">
             <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
               <circle cx="8.6" cy="8.6" r="5.4" />
@@ -105,15 +113,41 @@
     </header>
 
     <main>
-      <section class="hero">
-        <div class="wrap">
-          <p class="hero__eyebrow">Writing · Notes</p>
-          <h1>把想清楚的事，写下来。</h1>
-          <p>一个安静的写作角落，记录技术、阅读与生活里那些值得留下的片段。</p>
-          <div class="hero__meta">
-            <span>共 <strong data-post-count>—</strong></span>
-            <span>合计 <strong data-total-words>—</strong></span>
-            <span>最近更新 <strong data-last-updated>—</strong></span>
+      <section class="home-hero">
+        <div class="wrap home-hero__grid">
+          <!-- 左：头像 + 公告 -->
+          <aside class="home-hero__side">
+            <div class="home-avatar">
+              <div class="home-avatar__ring">
+                <img data-hero-avatar src="/assets/avatar.svg" alt="博主头像" width="112" height="112" />
+              </div>
+              <p class="home-avatar__name" data-hero-name>FeiTian</p>
+              <p class="home-avatar__tag">Blogger</p>
+            </div>
+
+            <div class="home-notice" data-hero-notice-card>
+              <div class="home-notice__head">
+                <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+                  <path d="M3.5 8.5v3l2.4.4 1.6 4 2 .3-1.3-4h1.6L13 14V6L5.9 8.5z" stroke-linejoin="round" />
+                  <path d="M15.5 8.2v3.6" stroke-linecap="round" />
+                </svg>
+                <h2>公告</h2>
+              </div>
+              <p class="home-notice__text" data-hero-notice>—</p>
+            </div>
+          </aside>
+
+          <!-- 右：个性签名 + 个人介绍 -->
+          <div class="home-hero__main">
+            <p class="hero__eyebrow">Writing · Notes</p>
+            <h1 data-hero-title>把想清楚的事，写下来。</h1>
+            <p class="home-signature" data-hero-signature>写下来，才算真的想清楚。</p>
+            <p class="home-intro" data-hero-intro>—</p>
+            <div class="hero__meta">
+              <span>共 <strong data-post-count>—</strong></span>
+              <span>合计 <strong data-total-words>—</strong></span>
+              <span>最近更新 <strong data-last-updated>—</strong></span>
+            </div>
           </div>
         </div>
       </section>
@@ -142,10 +176,6 @@
           <div class="posts__head">
             <h2 data-list-title>最新文章</h2>
             <span data-list-count>ALL POSTS</span>
-          </div>
-          <div class="filter-bar" data-filter-bar hidden>
-            <span data-filter-text></span>
-            <button type="button" data-filter-clear>清除筛选</button>
           </div>
           <div class="posts-grid" data-post-list></div>
         </div>

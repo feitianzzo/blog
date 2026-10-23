@@ -340,19 +340,113 @@
     badge.classList.toggle('is-off', !enabled);
   }
 
+  const PROFILE_FIELDS = {
+    introImage: '#introImageInput',
+    introTitle: '#introTitleInput',
+    introSub: '#introSubInput',
+    heroTitle: '#heroTitleInput',
+    signature: '#signatureInput',
+    authorName: '#authorNameInput',
+    authorBio: '#authorBioInput',
+    authorAvatar: '#authorAvatarInput',
+    githubUrl: '#githubUrlInput',
+    announcement: '#announceInput',
+  };
+
+  function updateIntroPreview() {
+    const img = $('#introImagePreview');
+    if (!img) return;
+    const src = ($('#introImageInput').value || '').trim() || '/assets/intro.png';
+    if (img.getAttribute('src') !== src) img.src = src;
+  }
+
+  function renderProfile(settings) {
+    Object.entries(PROFILE_FIELDS).forEach(([key, sel]) => {
+      const el = $(sel);
+      if (el) el.value = settings[key] == null ? '' : settings[key];
+    });
+    updateIntroPreview();
+  }
+
+  function collectProfile() {
+    const payload = {};
+    Object.entries(PROFILE_FIELDS).forEach(([key, sel]) => {
+      const el = $(sel);
+      if (el) payload[key] = el.value.trim();
+    });
+    return payload;
+  }
+
   async function loadSettings() {
     const summary = $('#listSummary');
     try {
       const { settings } = await api('/api/admin/settings');
       state.settings = settings;
       renderIntroSetting(settings.introEnabled !== false);
-      summary.textContent = '开关即时对全站访客生效';
+      renderProfile(settings);
+      summary.textContent = '开场画面、主页文字与站长资料，保存后立即同步到前台';
     } catch (err) {
       if (err.status === 401) return showLogin();
       summary.textContent = '加载失败';
       toast(err.message, true);
     }
   }
+
+  async function saveProfile() {
+    const btn = $('#saveProfileBtn');
+    const hint = $('#saveHint');
+    btn.disabled = true;
+    btn.textContent = '保存中…';
+    if (hint) hint.textContent = '';
+    try {
+      const { settings } = await api('/api/admin/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(collectProfile()),
+      });
+      state.settings = settings;
+      renderProfile(settings);
+      toast('设置已保存，刷新前台即可看到');
+      if (hint) hint.textContent = '已保存 · 刚刚更新';
+    } catch (err) {
+      if (err.status === 401) return showLogin();
+      toast(err.message, true);
+      if (hint) hint.textContent = err.message;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '保存全部设置';
+    }
+  }
+
+  $('#saveProfileBtn').addEventListener('click', saveProfile);
+
+  $('#introImageInput').addEventListener('input', updateIntroPreview);
+
+  $('#introImagePick').addEventListener('click', () => $('#introImageFile').click());
+
+  $('#introImageFile').addEventListener('change', async (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const btn = $('#introImagePick');
+    btn.disabled = true;
+    btn.textContent = '上传中…';
+    try {
+      const form = new FormData();
+      form.append('image', file);
+      const { url } = await api('/api/admin/uploads', { method: 'POST', body: form });
+      $('#introImageInput').value = url;
+      updateIntroPreview();
+      await saveProfile();
+      toast('开场图已上传并保存');
+    } catch (err) {
+      if (err.status === 401) return showLogin();
+      toast(err.message, true);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '上传新图';
+      e.target.value = '';
+    }
+  });
 
   $('#introToggle').addEventListener('change', async (e) => {
     const input = e.target;

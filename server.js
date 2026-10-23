@@ -15,6 +15,9 @@ import {
   taxonomy,
   getSettings,
   setSettings,
+  publishedPosts,
+  neighborsOf,
+  relatedByCategory,
   UPLOAD_DIR,
   ROOT_DIR,
 } from './lib/store.js';
@@ -113,10 +116,7 @@ app.get('/api/session', (req, res) => {
 /* ---------------- 前台接口 ---------------- */
 
 app.get('/api/posts', (_req, res) => {
-  const list = db()
-    .posts.filter((p) => p.status === 'published')
-    .sort((a, b) => (b.publishedAt || b.createdAt) - (a.publishedAt || a.createdAt))
-    .map((p) => publicPost(p, false));
+  const list = publishedPosts().map((p) => publicPost(p, false));
   res.json({ posts: list });
 });
 
@@ -126,7 +126,13 @@ app.get('/api/posts/:id', (req, res) => {
   if (!post || (post.status !== 'published' && !isOwner)) {
     return res.status(404).json({ error: '文章不存在或尚未发布' });
   }
-  res.json({ post: publicPost(post) });
+  const { prev, next } = neighborsOf(post.id);
+  res.json({
+    post: publicPost(post),
+    prev,
+    next,
+    related: relatedByCategory(post),
+  });
 });
 
 app.get('/api/taxonomy', (_req, res) => {
@@ -227,11 +233,46 @@ app.post('/api/admin/settings', requireAuth, (req, res) => {
     patch.introEnabled = body.introEnabled;
   }
 
+  const TEXT_FIELDS = {
+    introImage: 300,
+    introTitle: 80,
+    introSub: 160,
+    heroTitle: 100,
+    signature: 80,
+    authorName: 24,
+    authorBio: 160,
+    authorAvatar: 300,
+    githubUrl: 300,
+    announcement: 200,
+  };
+  for (const [key, max] of Object.entries(TEXT_FIELDS)) {
+    if (body[key] === undefined) continue;
+    if (typeof body[key] !== 'string') {
+      return res.status(400).json({ error: `${key} 必须是字符串` });
+    }
+    patch[key] = body[key].trim().slice(0, max);
+  }
+
   if (!Object.keys(patch).length) {
     return res.status(400).json({ error: '没有需要更新的设置项' });
   }
 
   res.json({ settings: setSettings(patch) });
+});
+
+/* ---------------- 设置项图片上传（开场图 / 头像） ---------------- */
+
+const IMAGE_FIELD = upload.single('image');
+
+app.post('/api/admin/uploads', requireAuth, (req, res) => {
+  IMAGE_FIELD(req, res, (err) => {
+    if (err) {
+      const msg = err.code === 'LIMIT_FILE_SIZE' ? '图片不能超过 5MB' : err.message;
+      return res.status(400).json({ error: msg });
+    }
+    if (!req.file) return res.status(400).json({ error: '请选择一张图片' });
+    res.status(201).json({ url: `/uploads/${req.file.filename}` });
+  });
 });
 
 app.get('/api/admin/posts', requireAuth, (_req, res) => {
@@ -374,6 +415,15 @@ app.use(express.static(path.join(ROOT_DIR, 'public'), { extensions: ['html'] }))
 
 app.get(['/p/:id', '/post/:id'], (_req, res) => {
   res.sendFile(path.join(ROOT_DIR, 'public', 'post.html'));
+});
+
+// 分类 / 标签的二级页面
+app.get(['/categories', '/tags'], (_req, res) => {
+  res.sendFile(path.join(ROOT_DIR, 'public', 'topics.html'));
+});
+
+app.get(['/category/:name', '/tag/:name'], (_req, res) => {
+  res.sendFile(path.join(ROOT_DIR, 'public', 'taxonomy.html'));
 });
 
 app.use('/api', (_req, res) => res.status(404).json({ error: '接口不存在' }));

@@ -1210,3 +1210,127 @@ body.admin {
     font-size: 15px;
   }
 }
+
+/* ---------------- 站长资料表单 ---------------- */
+
+.settings-card--form {
+  margin-top: 18px;
+}
+
+.setting--form {
+  display: block;
+  padding: 22px 24px 24px;
+}
+
+.settings-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 18px;
+  margin: 18px 0 20px;
+  max-width: 720px;
+}
+
+.settings-fields .field--full {
+  grid-column: 1 / -1;
+}
+
+.input-area {
+  resize: vertical;
+  min-height: 62px;
+  line-height: 1.65;
+  font-family: inherit;
+}
+
+.setting__save {
+  min-width: 118px;
+}
+
+@media (max-width: 680px) {
+  .setting--form {
+    padding: 18px 16px 20px;
+  }
+
+  .settings-fields {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+}
+
+/* ---------------- 开场图与设置动作 ---------------- */
+
+.setting--stack {
+  display: block;
+  padding: 22px 24px 24px;
+}
+
+.intro-image-row {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  margin: 16px 0 18px;
+  max-width: 720px;
+}
+
+.intro-image-preview {
+  flex: none;
+  width: 168px;
+  height: 104px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #f3f0ea center / cover no-repeat;
+  overflow: hidden;
+}
+
+.intro-image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.intro-image-actions {
+  min-width: 0;
+}
+
+.intro-image-actions .side-note {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted);
+  max-width: 34ch;
+}
+
+.setting__actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.setting__savehint {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+@media (max-width: 680px) {
+  .setting--stack {
+    padding: 18px 16px 20px;
+  }
+
+  .intro-image-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .intro-image-preview {
+    width: 100%;
+    height: 132px;
+  }
+}
+
+.settings-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 18px 0 8px;
+  padding-bottom: 8px;
+}

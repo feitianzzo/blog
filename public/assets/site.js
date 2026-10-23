@@ -18,6 +18,10 @@
   const pad = (n) => String(n).padStart(2, '0');
   const num = (n) => Number(n || 0).toLocaleString('zh-CN');
 
+  const categoryHref = (name) => `/category/${encodeURIComponent(name)}`;
+  const tagHref = (name) => `/tag/${encodeURIComponent(name)}`;
+  const postHref = (id) => `/p/${encodeURIComponent(id)}`;
+
   function fmtDate(ts) {
     const d = new Date(ts || Date.now());
     return {
@@ -38,21 +42,48 @@
     return data;
   }
 
-  function syncQuery(category, tag) {
-    const params = new URLSearchParams(location.search);
-    if (category) params.set('category', category);
-    else params.delete('category');
-    if (tag) params.set('tag', tag);
-    else params.delete('tag');
-    const qs = params.toString();
-    history.pushState({ category, tag }, '', qs ? `/?${qs}` : '/');
+  /* ---------------- 开场画面 ---------------- */
+
+  function safeImageUrl(url) {
+    return String(url || '').replace(/["'\\\s]/g, '');
   }
 
-  /* ---------------- 开场画面 ---------------- */
+  function applyIntroConf(conf) {
+    if (!conf) return;
+    const bg = document.querySelector('[data-intro-bg]');
+    if (bg && conf.introImage) {
+      bg.style.backgroundImage = `url("${safeImageUrl(conf.introImage)}")`;
+    }
+    const title = document.querySelector('[data-intro-title]');
+    if (title && conf.introTitle) {
+      title.innerHTML = String(conf.introTitle)
+        .split('\n')
+        .map((line) => esc(line))
+        .join('<br />');
+    }
+    const sub = document.querySelector('[data-intro-sub]');
+    if (sub && conf.introSub) sub.textContent = conf.introSub;
+  }
 
   function initIntro() {
     const el = document.getElementById('intro');
     if (!el || el.hidden) return;
+
+    const ready = () => requestAnimationFrame(() => el.classList.add('is-ready'));
+
+    // 后台配置的开场图与文案（首屏脚本取到的配置直接复用）
+    if (window.__siteSettings) {
+      applyIntroConf(window.__siteSettings);
+      ready();
+    } else {
+      getJSON('/api/settings')
+        .then((data) => {
+          window.__siteSettings = data.settings || {};
+          applyIntroConf(data.settings);
+        })
+        .catch(() => {})
+        .then(ready);
+    }
 
     let done = false;
     const dismiss = () => {
@@ -62,11 +93,6 @@
       document.body.classList.remove('intro-lock');
       document.body.classList.add('intro-done');
       document.removeEventListener('keydown', onKey);
-      try {
-        localStorage.setItem('banye_intro_seen', '1');
-      } catch {
-        /* 隐私模式下忽略 */
-      }
       setTimeout(() => el.remove(), 1100);
     };
 
@@ -81,8 +107,6 @@
     el.addEventListener('wheel', dismiss, { passive: true, once: true });
     el.addEventListener('touchstart', dismiss, { passive: true, once: true });
     document.addEventListener('keydown', onKey);
-    // 图片加载完成后再让提示浮现
-    requestAnimationFrame(() => el.classList.add('is-ready'));
   }
 
   /* ---------------- 站内搜索 ---------------- */
@@ -286,15 +310,17 @@
       : `<div class="card__cover card__cover--blank"><span>${initial}</span></div>`;
     const cat = post.category
       ? `<span class="card__cat">${esc(post.category)}</span>`
-      : `<span class="card__cat card__cat--none">随笔</span>`;
+      : `<span class="card__cat card__cat--none">未分类</span>`;
     const words = post.words ? `${num(post.words)} 字` : '';
     const comments = post.commentCount ? `${num(post.commentCount)} 评论` : '';
-    return `<a class="card" href="/p/${encodeURIComponent(post.id)}">
+    const tags = (post.tags || []).slice(0, 4);
+    return `<a class="card" href="${postHref(post.id)}">
       ${cover}
       <div class="card__body">
         <div class="card__top">${cat}<span class="card__date">${date}</span></div>
         <h3 class="card__title">${esc(post.title)}</h3>
         <p class="card__excerpt">${esc(post.excerpt || '')}</p>
+        ${tags.length ? `<div class="card__tags">${tags.map((t) => `<span class="tag tag--sm">#${esc(t)}</span>`).join('')}</div>` : ''}
         <div class="card__foot">
           <span class="card__more">阅读全文
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
@@ -307,100 +333,99 @@
     </a>`;
   }
 
+  /* ---------------- 首页：后台可配置文案 ---------------- */
+
+  function applyHomeConf(conf) {
+    const settings = conf || {};
+
+    const avatar = document.querySelector('[data-hero-avatar]');
+    if (avatar) {
+      avatar.src = settings.authorAvatar || '/assets/avatar.svg';
+      avatar.alt = `${settings.authorName || '博主'}的头像`;
+      avatar.addEventListener(
+        'error',
+        () => {
+          avatar.src = '/assets/avatar.svg';
+        },
+        { once: true }
+      );
+    }
+
+    const name = document.querySelector('[data-hero-name]');
+    if (name) name.textContent = settings.authorName || 'FeiTian';
+
+    const noticeCard = document.querySelector('[data-hero-notice-card]');
+    const notice = document.querySelector('[data-hero-notice]');
+    if (noticeCard) {
+      const text = (settings.announcement || '').trim();
+      noticeCard.hidden = !text;
+      if (notice) notice.textContent = text;
+    }
+
+    const title = document.querySelector('[data-hero-title]');
+    if (title && settings.heroTitle) title.textContent = settings.heroTitle;
+
+    const signature = document.querySelector('[data-hero-signature]');
+    if (signature) {
+      const text = (settings.signature || '').trim();
+      signature.textContent = text;
+      signature.hidden = !text;
+    }
+
+    const intro = document.querySelector('[data-hero-intro]');
+    if (intro) intro.textContent = (settings.authorBio || '').trim();
+  }
+
   async function initHome() {
     const list = document.querySelector('[data-post-list]');
     if (!list) return;
 
+    // 兼容老链接：/?category=xxx 直接跳到分类二级页
+    const params = new URLSearchParams(location.search);
+    const legacyCat = params.get('category');
+    const legacyTag = params.get('tag');
+    if (legacyCat) return location.replace(categoryHref(legacyCat));
+    if (legacyTag) return location.replace(tagHref(legacyTag));
+
     const counter = document.querySelector('[data-post-count]');
     const totalWords = document.querySelector('[data-total-words]');
     const updated = document.querySelector('[data-last-updated]');
-    const titleEl = document.querySelector('[data-list-title]');
     const countLabel = document.querySelector('[data-list-count]');
-    const filterBar = document.querySelector('[data-filter-bar]');
-    const filterText = document.querySelector('[data-filter-text]');
     const catChips = document.querySelector('[data-category-chips]');
     const tagChips = document.querySelector('[data-tag-chips]');
 
-    const state = {
-      posts: [],
-      taxonomy: { categories: [], tags: [] },
-      category: new URLSearchParams(location.search).get('category') || '',
-      tag: new URLSearchParams(location.search).get('tag') || '',
-    };
-
     list.innerHTML = skeleton(4);
 
-    function chipHTML(label, count, active, dataAttr, value) {
-      return `<button class="chip${active ? ' is-active' : ''}" type="button" ${dataAttr}="${esc(value)}">
-        <span>${esc(label)}</span><em>${count}</em>
-      </button>`;
-    }
-
-    function renderChips() {
-      if (catChips) {
-        const total = state.taxonomy.categories.reduce((sum, c) => sum + c.count, 0);
-        catChips.innerHTML =
-          chipHTML('全部', total, !state.category, 'data-category', '') +
-          state.taxonomy.categories
-            .map((c) => chipHTML(c.name, c.count, state.category === c.name, 'data-category', c.name))
-            .join('');
-      }
-      if (tagChips) {
-        tagChips.innerHTML = state.taxonomy.tags.length
-          ? state.taxonomy.tags
-              .map((t) => chipHTML('#' + t.name, t.count, state.tag === t.name, 'data-tag', t.name))
-              .join('')
-          : '<span class="chips__empty">还没有标签，写文章时可以加上</span>';
-      }
-    }
-
-    function applyFilter() {
-      const { posts, category, tag } = state;
-      let filtered = posts;
-      if (category) filtered = filtered.filter((p) => p.category === category);
-      if (tag) filtered = filtered.filter((p) => (p.tags || []).includes(tag));
-
-      renderChips();
-
-      if (titleEl) titleEl.textContent = category || tag ? '筛选结果' : '最新文章';
-      if (countLabel) {
-        countLabel.textContent = `${filtered.length} 篇${category || tag ? ' · 筛选' : ' · ALL POSTS'}`;
-      }
-
-      if (filterBar) {
-        if (category || tag) {
-          filterBar.hidden = false;
-          const bits = [];
-          if (category) bits.push(`分类「${esc(category)}」`);
-          if (tag) bits.push(`标签 #${esc(tag)}`);
-          filterText.innerHTML = `正在查看 ${bits.join(' + ')}`;
-        } else {
-          filterBar.hidden = true;
-        }
-      }
-
-      if (!filtered.length) {
-        list.style.gridTemplateColumns = '1fr';
-        list.innerHTML = `<div class="empty">
-          <h3>没有符合条件的文章</h3>
-          <p>换一个分类或标签看看，或者<a href="/" class="link-accent">查看全部文章</a>。</p>
-        </div>`;
-        return;
-      }
-
-      list.style.gridTemplateColumns = '';
-      list.innerHTML = filtered.map(cardHTML).join('');
+    function chipHTML(label, count, href) {
+      return `<a class="chip" href="${esc(href)}"><span>${esc(label)}</span><em>${count}</em></a>`;
     }
 
     try {
-      const [{ posts }, tax] = await Promise.all([getJSON('/api/posts'), getJSON('/api/taxonomy')]);
-      state.posts = posts;
-      state.taxonomy = tax;
+      const [{ posts }, tax, conf] = await Promise.all([
+        getJSON('/api/posts'),
+        getJSON('/api/taxonomy'),
+        getJSON('/api/settings').catch(() => ({ settings: {} })),
+      ]);
+
+      applyHomeConf(conf.settings);
 
       if (counter) counter.textContent = `${posts.length} 篇`;
       if (totalWords) totalWords.textContent = `${num(posts.reduce((sum, p) => sum + (p.words || 0), 0))} 字`;
       if (updated && posts[0]) {
         updated.textContent = fmtDate(posts[0].publishedAt || posts[0].createdAt).full;
+      }
+
+      if (catChips) {
+        const total = tax.categories.reduce((sum, c) => sum + c.count, 0);
+        catChips.innerHTML =
+          chipHTML('全部', total, '/?intro=0') +
+          (tax.categories.map((c) => chipHTML(c.name, c.count, categoryHref(c.name))).join('') ||
+            '<span class="chips__empty">还没有分类，写文章时可以加上</span>');
+      }
+      if (tagChips) {
+        tagChips.innerHTML =
+          tax.tags.map((t) => chipHTML('#' + t.name, t.count, tagHref(t.name))).join('') ||
+          '<span class="chips__empty">还没有标签，写文章时可以加上</span>';
       }
 
       if (!posts.length) {
@@ -409,47 +434,291 @@
           <h3>还没有文章</h3>
           <p>登录后台发布第一篇，它会立刻出现在这里。</p>
         </div>`;
-        renderChips();
         return;
       }
 
-      applyFilter();
+      if (countLabel) countLabel.textContent = `${posts.length} 篇 · ALL POSTS`;
+      list.innerHTML = posts.map(cardHTML).join('');
     } catch (err) {
       list.style.gridTemplateColumns = '1fr';
       list.innerHTML = `<div class="empty"><h3>加载失败</h3><p>${esc(err.message)}</p></div>`;
     }
+  }
 
-    document.addEventListener('click', (e) => {
-      const catBtn = e.target.closest('[data-category]');
-      if (catBtn) {
-        state.category = catBtn.dataset.category;
-        state.tag = '';
-        syncQuery(state.category, '');
-        applyFilter();
+  /* ---------------- 主题 / 阅读模式 / 滚动工具 ---------------- */
+
+  function currentTheme() {
+    return document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+  }
+
+  function applyTheme(theme, persist = true) {
+    if (theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    else document.documentElement.removeAttribute('data-theme');
+    if (persist) {
+      try {
+        localStorage.setItem('banye_theme', theme);
+      } catch {
+        /* 隐私模式忽略 */
+      }
+    }
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', theme === 'dark' ? '#14161a' : '#fbfaf7');
+  }
+
+  function smoothTo(el, offset = 84) {
+    if (!el) return;
+    const top = Math.max(0, el.getBoundingClientRect().top + window.scrollY - offset);
+    window.scrollTo({ top, behavior: 'smooth' });
+  }
+
+  /* ---------------- 文章页：左侧栏 ---------------- */
+
+  function miniItemHTML(post) {
+    const tags = (post.tags || [])
+      .slice(0, 3)
+      .map((t) => `<span class="mini__tag">#${esc(t)}</span>`)
+      .join('');
+    return `<li class="mini">
+      <a class="mini__link" href="${postHref(post.id)}">
+        <span class="mini__title">${esc(post.title)}</span>
+        <span class="mini__meta">
+          ${post.category ? `<span class="mini__cat">${esc(post.category)}</span>` : ''}
+          ${tags}
+        </span>
+      </a>
+    </li>`;
+  }
+
+  function renderSide(detail, posts, tax, settings) {
+    const conf = settings || {};
+
+    // 个人资料
+    const avatar = document.querySelector('[data-profile-avatar]');
+    if (avatar) {
+      avatar.src = conf.authorAvatar || '/assets/avatar.svg';
+      avatar.alt = `${conf.authorName || '博主'}的头像`;
+      avatar.addEventListener(
+        'error',
+        () => {
+          avatar.src = '/assets/avatar.svg';
+        },
+        { once: true }
+      );
+    }
+    const nameEl = document.querySelector('[data-profile-name]');
+    if (nameEl) nameEl.textContent = conf.authorName || 'FeiTian';
+    const bioEl = document.querySelector('[data-profile-bio]');
+    if (bioEl) bioEl.textContent = conf.authorBio || '';
+
+    const stats = {
+      '[data-stat-posts]': posts.length,
+      '[data-stat-tags]': (tax.tags || []).length,
+      '[data-stat-cats]': (tax.categories || []).length,
+    };
+    Object.entries(stats).forEach(([sel, value]) => {
+      const el = document.querySelector(sel);
+      if (el) el.textContent = String(value);
+    });
+
+    const github = document.querySelector('[data-profile-github]');
+    if (github) {
+      if (conf.githubUrl) {
+        github.href = conf.githubUrl;
+        github.hidden = false;
+      } else {
+        github.hidden = true;
+      }
+    }
+
+    // 公告
+    const announceCard = document.querySelector('[data-announce-card]');
+    const announceText = document.querySelector('[data-announce]');
+    if (announceCard) {
+      const text = (conf.announcement || '').trim();
+      announceCard.hidden = !text;
+      if (announceText) announceText.textContent = text;
+    }
+
+    // 当前分类下的其他文章
+    const relatedCard = document.querySelector('[data-related-card]');
+    const relatedList = document.querySelector('[data-related]');
+    const related = detail.related || [];
+    if (relatedCard) {
+      if (detail.post.category) {
+        relatedCard.hidden = false;
+        const title = document.querySelector('[data-related-title]');
+        if (title) title.textContent = `「${detail.post.category}」下的文章`;
+        if (relatedList) {
+          relatedList.innerHTML = related.length
+            ? related.map(miniItemHTML).join('')
+            : '<li class="mini mini--empty">这个分类下还没有其他文章</li>';
+        }
+      } else {
+        relatedCard.hidden = true;
+      }
+    }
+
+    // 最新文章
+    const latestList = document.querySelector('[data-latest]');
+    if (latestList) {
+      const latest = posts.filter((p) => p.id !== detail.post.id).slice(0, 3);
+      latestList.innerHTML = latest.length
+        ? latest.map(miniItemHTML).join('')
+        : '<li class="mini mini--empty">还没有更多文章</li>';
+    }
+  }
+
+  /* ---------------- 文章页：目录 ---------------- */
+
+  function buildToc() {
+    const host = document.querySelector('[data-toc]');
+    if (!host) return;
+    const countEl = document.querySelector('[data-toc-count]');
+    const prose = document.querySelector('.prose');
+    const heads = prose
+      ? Array.from(prose.querySelectorAll('h2, h3')).filter((h) => (h.textContent || '').trim())
+      : [];
+
+    if (!heads.length) {
+      host.innerHTML = '<p class="toc__empty">这篇文章没有小标题</p>';
+      if (countEl) countEl.textContent = '0';
+      return;
+    }
+
+    heads.forEach((h, i) => {
+      if (!h.id) h.id = `sec-${i + 1}`;
+    });
+
+    host.innerHTML = heads
+      .map((h) => {
+        const sub = h.tagName === 'H3' ? ' is-sub' : '';
+        return `<a class="toc__link${sub}" href="#${h.id}">${esc(h.textContent.trim())}</a>`;
+      })
+      .join('');
+    if (countEl) countEl.textContent = String(heads.length);
+
+    const links = Array.from(host.querySelectorAll('.toc__link'));
+    let ticking = false;
+    const spy = () => {
+      const line = window.scrollY + 120;
+      let active = 0;
+      heads.forEach((h, i) => {
+        if (h.getBoundingClientRect().top + window.scrollY <= line) active = i;
+      });
+      links.forEach((a, i) => a.classList.toggle('is-active', i === active));
+    };
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        spy();
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    spy();
+
+    host.addEventListener('click', (e) => {
+      const link = e.target.closest('.toc__link');
+      if (!link) return;
+      const target = document.getElementById(link.getAttribute('href').slice(1));
+      if (!target) return;
+      e.preventDefault();
+      smoothTo(target, 88);
+      history.replaceState(null, '', link.getAttribute('href'));
+    });
+  }
+
+  /* ---------------- 文章页：上一篇 / 下一篇 ---------------- */
+
+  function postNavHTML(prev, next) {
+    const card = (post, dir) => {
+      const label = dir === 'prev' ? '上一篇' : '下一篇';
+      if (!post) {
+        return `<span class="postnav__item postnav__item--empty postnav__item--${dir}">
+          <span class="postnav__label">${label}</span>
+          <span class="postnav__title">${dir === 'prev' ? '已经是第一篇了' : '已经是最后一篇了'}</span>
+        </span>`;
+      }
+      return `<a class="postnav__item postnav__item--${dir}" href="${postHref(post.id)}">
+        <span class="postnav__label">${label}</span>
+        <span class="postnav__title">${esc(post.title)}</span>
+      </a>`;
+    };
+    return `<nav class="postnav" aria-label="上一篇和下一篇">
+      ${card(prev, 'prev')}${card(next, 'next')}
+    </nav>`;
+  }
+
+  /* ---------------- 文章页：右侧功能栏 ---------------- */
+
+  function initRail() {
+    const rail = document.querySelector('[data-rail]');
+    if (!rail) return;
+    const readingBtn = rail.querySelector('[data-rail-action="reading"]');
+    const themeBtn = rail.querySelector('[data-rail-action="theme"]');
+    const topBtn = rail.querySelector('[data-rail-action="top"]');
+
+    const setReading = (on) => {
+      document.body.classList.toggle('reading-mode', on);
+      if (readingBtn) {
+        readingBtn.setAttribute('aria-pressed', String(on));
+        readingBtn.setAttribute('data-tip', on ? '退出阅读模式' : '阅读模式');
+      }
+      try {
+        sessionStorage.setItem('banye_reading', on ? '1' : '0');
+      } catch {
+        /* 忽略 */
+      }
+    };
+
+    const setTheme = (theme, persist = true) => {
+      applyTheme(theme, persist);
+      if (themeBtn) {
+        const dark = theme === 'dark';
+        themeBtn.setAttribute('aria-pressed', String(dark));
+        themeBtn.setAttribute('data-tip', dark ? '日间模式' : '夜间模式');
+      }
+    };
+
+    let reading = false;
+    try {
+      reading = sessionStorage.getItem('banye_reading') === '1';
+    } catch {
+      /* 忽略 */
+    }
+    setReading(reading);
+    setTheme(currentTheme(), false);
+
+    rail.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-rail-action]');
+      if (!btn) return;
+      const action = btn.dataset.railAction;
+
+      if (action === 'reading') {
+        setReading(!document.body.classList.contains('reading-mode'));
         return;
       }
-      const tagBtn = e.target.closest('[data-tag]');
-      if (tagBtn) {
-        state.tag = tagBtn.dataset.tag;
-        state.category = '';
-        syncQuery('', state.tag);
-        applyFilter();
+      if (action === 'theme') {
+        setTheme(currentTheme() === 'dark' ? 'light' : 'dark');
         return;
       }
-      if (e.target.closest('[data-filter-clear]')) {
-        state.category = '';
-        state.tag = '';
-        syncQuery('', '');
-        applyFilter();
+      if (action === 'comments') {
+        const target = document.getElementById('comments');
+        if (target) smoothTo(target, 76);
+        else window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        return;
+      }
+      if (action === 'top') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     });
 
-    window.addEventListener('popstate', () => {
-      const params = new URLSearchParams(location.search);
-      state.category = params.get('category') || '';
-      state.tag = params.get('tag') || '';
-      applyFilter();
-    });
+    const onScroll = () => {
+      if (topBtn) topBtn.classList.toggle('is-dim', window.scrollY < 240);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
   }
 
   /* ---------------- 详情页 ---------------- */
@@ -472,7 +741,16 @@
     }
 
     try {
-      const { post } = await getJSON(`/api/posts/${encodeURIComponent(id)}`);
+      const [detail, listData, tax, conf] = await Promise.all([
+        getJSON(`/api/posts/${encodeURIComponent(id)}`),
+        getJSON('/api/posts').catch(() => ({ posts: [] })),
+        getJSON('/api/taxonomy').catch(() => ({ categories: [], tags: [] })),
+        getJSON('/api/settings').catch(() => ({ settings: {} })),
+      ]);
+
+      const { post, prev, next } = detail;
+      const posts = listData.posts || [];
+      const settings = conf.settings || {};
       const date = fmtDate(post.publishedAt || post.createdAt);
       document.title = `${post.title} · ${SITE.name}`;
 
@@ -484,14 +762,11 @@
       ].filter(Boolean);
 
       const tagList = (post.tags || [])
-        .map(
-          (t) =>
-            `<a class="tag" href="/?tag=${encodeURIComponent(t)}">#${esc(t)}</a>`
-        )
+        .map((t) => `<a class="tag" href="${tagHref(t)}">#${esc(t)}</a>`)
         .join('');
 
       host.innerHTML = `
-        <a class="backlink" href="/">
+        <a class="backlink" href="/?intro=0">
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
             <path d="M13 8H4M7.5 4.5 4 8l3.5 3.5" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
@@ -504,7 +779,7 @@
         ${
           post.category || tagList
             ? `<div class="article__tax">
-                ${post.category ? `<a class="tag tag--cat" href="/?category=${encodeURIComponent(post.category)}">${esc(post.category)}</a>` : ''}
+                ${post.category ? `<a class="tag tag--cat" href="${categoryHref(post.category)}">${esc(post.category)}</a>` : ''}
                 ${tagList}
               </div>`
             : ''
@@ -513,10 +788,14 @@
         <div class="prose">${window.renderMarkdown(post.content)}</div>
         <div class="article__footer">
           <span>写于 ${date.short} · 共 ${num(post.words)} 字</span>
-          <a href="/">继续看看别的 →</a>
-        </div>`;
+          <a href="/?intro=0">继续看看别的 →</a>
+        </div>
+        ${postNavHTML(prev, next)}`;
 
-      initComments(id, post.commentCount || 0);
+      renderSide(detail, posts, tax, settings);
+      buildToc();
+      await initComments(id, post.commentCount || 0);
+      initRail();
     } catch (err) {
       host.innerHTML = `<div class="empty">
         <h3>文章不存在</h3>
@@ -662,4 +941,17 @@
     initHome();
     initPost();
   });
+
+  // 分类 / 标签页面复用这里的工具与卡片样式
+  window.BlogUI = {
+    esc,
+    num,
+    fmtDate,
+    readingTime,
+    getJSON,
+    cardHTML,
+    categoryHref,
+    tagHref,
+    postHref,
+  };
 })();
