@@ -816,6 +816,11 @@ body.intro-lock {
     display: none;
   }
 
+  /* 分类、标签现在是独立页面，移动端保留入口 */
+  .site-nav a {
+    white-space: nowrap;
+  }
+
   .search {
     padding: 8vh 14px 30px;
   }
@@ -846,6 +851,7 @@ body.intro-lock {
 
   .site-nav a {
     padding: 7px 9px;
+    white-space: nowrap;
   }
 
   .site-nav .nav-cta {
@@ -910,5 +916,21 @@ body.intro-lock {
 
   .search__foot {
     justify-content: flex-end;
+  }
+}
+
+@media (max-width: 420px) {
+  .site-nav {
+    gap: 0;
+  }
+
+  .site-nav a {
+    padding: 7px 7px;
+    font-size: 13.5px;
+  }
+
+  .site-nav .nav-cta {
+    padding: 7px 10px;
+    font-size: 13px;
   }
 }

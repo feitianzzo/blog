@@ -316,26 +316,31 @@
     const updated = fmtDate(post.updatedAt || post.publishedAt || post.createdAt).dash;
     const tags = (post.tags || []).slice(0, 4);
 
-    const meta = [
-      `<span class="post-item__meta-item">${META_ICON.calendar}发表于 ${published}</span>`,
-      `<span class="post-item__sep">|</span>`,
-      `<span class="post-item__meta-item">${META_ICON.clock}更新于 ${updated}</span>`,
+    const parts = [
       post.category
-        ? `<span class="post-item__sep">|</span><span class="post-item__meta-item">${META_ICON.folder}${esc(post.category)}</span>`
+        ? `<span class="post-item__cat">${META_ICON.folder}${esc(post.category)}</span>`
         : '',
+      `<span class="post-item__meta-item">${META_ICON.calendar}发表于 ${published}</span>`,
+      '<span class="post-item__sep">·</span>',
+      `<span class="post-item__meta-item">${META_ICON.clock}更新于 ${updated}</span>`,
       tags.length
-        ? `<span class="post-item__sep">|</span><span class="post-item__tags">${tags
-            .map((t) => `<span class="post-item__tag">${META_ICON.tag}${esc(t)}</span>`)
-            .join('<span class="post-item__dot">·</span>')}</span>`
+        ? `<span class="post-item__tags">${tags
+            .map((t) => `<span class="post-item__tag">#${esc(t)}</span>`)
+            .join('')}</span>`
         : '',
-    ]
-      .filter(Boolean)
-      .join('');
+    ];
 
     return `<article class="post-item">
       <a class="post-item__link" href="${postHref(post.id)}">
-        <h3 class="post-item__title">${esc(post.title)}</h3>
-        <div class="post-item__meta">${meta}</div>
+        <div class="post-item__head">
+          <h3 class="post-item__title">${esc(post.title)}</h3>
+          <span class="post-item__arrow" aria-hidden="true">
+            <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7">
+              <path d="M4.5 10h10M10.5 5.8 14.7 10l-4.2 4.2" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </span>
+        </div>
+        <div class="post-item__meta">${parts.filter(Boolean).join('')}</div>
         ${post.excerpt ? `<p class="post-item__excerpt">${esc(post.excerpt)}</p>` : ''}
       </a>
     </article>`;
